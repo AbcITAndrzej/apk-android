@@ -87,6 +87,39 @@ final class DnsPacketUtils {
         return packet;
     }
 
+
+    static String extractQuestionName(byte[] dnsPayload) {
+        if (dnsPayload == null || dnsPayload.length < 13) return "?";
+        StringBuilder name = new StringBuilder();
+        int index = 12;
+        int guard = 0;
+
+        while (index < dnsPayload.length && guard++ < 80) {
+            int len = dnsPayload[index] & 0xFF;
+            if (len == 0) {
+                return name.length() == 0 ? "." : name.toString();
+            }
+            if ((len & 0xC0) == 0xC0) {
+                // Pytanie DNS normalnie nie powinno tu używać kompresji, ale log nie może rozwalić usługi.
+                return name.length() == 0 ? "?" : name.toString();
+            }
+            index++;
+            if (len > 63 || index + len > dnsPayload.length) return "?";
+            if (name.length() > 0) name.append('.');
+            for (int i = 0; i < len; i++) {
+                int c = dnsPayload[index + i] & 0xFF;
+                if (c >= 32 && c <= 126) {
+                    name.append((char) c);
+                } else {
+                    name.append('?');
+                }
+            }
+            index += len;
+        }
+        return name.length() == 0 ? "?" : name.toString();
+    }
+
+
     private static boolean matchesVirtualDns(byte[] packet, int offset) {
         return packet[offset] == VIRTUAL_DNS_BYTES[0]
                 && packet[offset + 1] == VIRTUAL_DNS_BYTES[1]
