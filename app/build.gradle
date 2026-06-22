@@ -1,0 +1,16 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'pl.abcit.adguardtvdns'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'pl.abcit.adguardtvdns'
+        minSdk 23
+        targetSdk 29
+        versionCode 1
+        versionName '1.0'
+    }
+}
