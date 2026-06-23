@@ -43,4 +43,11 @@
     <string name="clear_cache">Cache / Protokolle löschen</string>
     <string name="cache_cleared">Cache und Protokolle gelöscht</string>
     <string name="power_button_hint">Ein/Aus: DNS-VPN verbinden oder stoppen</string>
+    <string name="build_flavor">v3.5 Updater-Test</string>
+    <string name="test_update_source">GitHub Releases testen</string>
+    <string name="testing_update_source">Update-Quelle wird getestet…</string>
+    <string name="update_source_ok">GitHub Releases funktioniert</string>
+    <string name="open_releases_page">Releases öffnen</string>
+    <string name="update_check_failed_title">Update-Prüfung fehlgeschlagen</string>
+    <string name="language_hint">Sprache der App wählen. Einige Sprachen sind Beta und können auf Englisch zurückfallen.</string>
 </resources>

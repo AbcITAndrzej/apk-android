@@ -63,7 +63,7 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.4 release updater</string>
+    <string name="build_flavor">v3.5 updater test</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
@@ -98,7 +98,7 @@
     <string name="cloud_beta_hint">Cloud sync is planned for a future version. Local export/import works now.</string>
     <string name="cloud_beta_not_ready">Cloud save is not ready yet.</string>
     <string name="language">Language</string>
-    <string name="language_hint">Choose the application language. Missing translations fall back to English.</string>
+    <string name="language_hint">Choose the application language. PL/EN/DE/FR/NL are the most complete. Other languages are beta and may fall back to English.</string>
     <string name="language_system">System language</string>
     <string name="language_changed">Language changed</string>
 
@@ -147,4 +147,31 @@ Download and open Android installer?</string>
     <string name="logs_exported">Diagnostic logs exported</string>
     <string name="always_on_hint">Always-on VPN is configured in Android system VPN settings. The button above opens the right place when the TV firmware allows it.</string>
 
+    <string name="test_update_source">Test GitHub Releases</string>
+    <string name="testing_update_source">Testing update source…</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Repository: %1$s
+Current: %2$s
+Latest: %3$s
+Latest versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
+    <string name="open_releases_page">Open Releases</string>
+    <string name="update_check_failed_title">Update check failed</string>
+    <string name="update_check_failed_details">Repository: %1$s
+
+Reason: %2$s
+
+Checklist:
+1. Repo must be public or reachable.
+2. Create a tag, for example v3.5.
+3. Wait until Actions publishes GitHub Release.
+4. Release must contain an APK asset.</string>
+    <string name="no_update_details">Current: %1$s
+Latest: %2$s
+Latest versionCode: %3$s
+APK: %4$s
+
+The updater works. There is simply no newer version than the one installed.</string>
+    <string name="light_theme_fixed">Light theme readability improved</string>
 </resources>

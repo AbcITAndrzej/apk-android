@@ -6,3 +6,8 @@ local.properties
 .DS_Store
 *.apk
 *.aab
+*.zip
+gh
+hard-fix-java-split-escape-and-push.bat
+safe-fix-java-split-escape-and-push.bat
+fix-java-split-escape-and-push.bat

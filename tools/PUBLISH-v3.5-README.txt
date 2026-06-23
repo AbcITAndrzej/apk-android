@@ -1,0 +1,36 @@
+AdGuard TV DNS Pro v3.5 - jak wypchnac i sprawdzic aktualizacje
+
+1) Rozpakuj ZIP "files-only" do glownego folderu repo i nadpisz pliki.
+
+2) W CMD:
+   cd /d c:\Users\DELL\Downloads\adguard-tv-dns-project\adguard-tv-dns
+   git rm gh hard-fix-java-split-escape-and-push.bat safe-fix-java-split-escape-and-push.bat fix-java-split-escape-and-push.bat 2>nul
+   git add -A
+   git commit -m "Upgrade to v3.5 updater test"
+   git push
+
+3) Sprawdz build main:
+   gh run list -R AbcITAndrzej/apk-android --limit 5
+
+4) Jezeli main jest zielony, utworz release tag:
+   git tag v3.5
+   git push origin v3.5
+
+5) Sprawdz release build:
+   gh run list -R AbcITAndrzej/apk-android --limit 5
+
+6) Po zielonym buildzie wejdz na:
+   https://github.com/AbcITAndrzej/apk-android/releases
+
+Powinien byc release v3.5 z plikiem APK.
+
+Jak testowac updater:
+- Jezeli w telefonie/TV masz zainstalowana wersje starsza niz v3.5, kliknij w aplikacji:
+  Ustawienia > O aplikacji > Sprawdz aktualizacje.
+- Jezeli masz juz v3.5, kliknij:
+  Ustawienia > O aplikacji > Test GitHub Releases.
+  To tylko sprawdza, czy aplikacja widzi release i APK na GitHubie.
+
+Wazne:
+- Aktualizacja APK przejdzie tylko gdy stara i nowa wersja sa podpisane tym samym release keystore.
+- Jezeli wczesniej instalowales debug APK, release APK moze wymagac odinstalowania starej wersji.

@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
 import android.widget.Toast;
@@ -22,10 +23,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 final class AppUpdateManager {
     private static final String REPO = "AbcITAndrzej/apk-android";
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/" + REPO + "/releases/latest";
+    private static final String RELEASES_PAGE_URL = "https://github.com/" + REPO + "/releases";
 
     private AppUpdateManager() {}
 
@@ -35,20 +39,47 @@ final class AppUpdateManager {
         new Thread(() -> {
             try {
                 ReleaseInfo info = fetchLatestRelease();
-                String current = getCurrentVersionName(activity);
-                boolean newer = isDifferentVersion(current, info.tagName, info.name);
+                VersionInfo current = getCurrentVersion(activity);
+                boolean newer = isNewer(current, info);
                 activity.runOnUiThread(() -> {
                     if (!newer) {
-                        Toast.makeText(activity, activity.getString(R.string.no_update_available), Toast.LENGTH_LONG).show();
+                        showNoUpdateDialog(activity, info, current);
                     } else {
-                        showUpdateDialog(activity, info, current);
+                        showUpdateDialog(activity, info, current.displayName());
                     }
                 });
             } catch (Exception e) {
-                DebugLog.log(activity, "SYSTEM", "Update check failed: " + e.getClass().getSimpleName());
-                activity.runOnUiThread(() -> Toast.makeText(activity, activity.getString(R.string.update_check_failed), Toast.LENGTH_LONG).show());
+                DebugLog.log(activity, "SYSTEM", "Update check failed: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+                activity.runOnUiThread(() -> showUpdateErrorDialog(activity, e));
             }
         }, "AppUpdateCheck").start();
+    }
+
+    static void testReleaseSource(Activity activity) {
+        if (activity == null) return;
+        Toast.makeText(activity, activity.getString(R.string.testing_update_source), Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                ReleaseInfo info = fetchLatestRelease();
+                VersionInfo current = getCurrentVersion(activity);
+                String msg = activity.getString(R.string.update_source_ok_message,
+                        REPO,
+                        current.displayName(),
+                        info.displayName(),
+                        String.valueOf(info.versionCode),
+                        info.apkName == null ? "-" : info.apkName,
+                        info.downloadUrl == null ? "-" : info.downloadUrl);
+                activity.runOnUiThread(() -> new AlertDialog.Builder(activity)
+                        .setTitle(activity.getString(R.string.update_source_ok))
+                        .setMessage(msg)
+                        .setPositiveButton("OK", null)
+                        .setNeutralButton(activity.getString(R.string.open_releases_page), (d, w) -> openReleasesPage(activity))
+                        .show());
+            } catch (Exception e) {
+                DebugLog.log(activity, "SYSTEM", "Update source test failed: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+                activity.runOnUiThread(() -> showUpdateErrorDialog(activity, e));
+            }
+        }, "AppUpdateSourceTest").start();
     }
 
     private static void showUpdateDialog(Activity activity, ReleaseInfo info, String current) {
@@ -57,23 +88,53 @@ final class AppUpdateManager {
                 .setMessage(activity.getString(R.string.update_available_message, current, info.displayName()))
                 .setPositiveButton(activity.getString(R.string.download_update), (d, w) -> downloadAndInstall(activity, info))
                 .setNegativeButton(activity.getString(R.string.cancel), null)
+                .setNeutralButton(activity.getString(R.string.open_releases_page), (d, w) -> openReleasesPage(activity))
+                .show();
+    }
+
+    private static void showNoUpdateDialog(Activity activity, ReleaseInfo info, VersionInfo current) {
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.no_update_available))
+                .setMessage(activity.getString(R.string.no_update_details,
+                        current.displayName(),
+                        info.displayName(),
+                        String.valueOf(info.versionCode),
+                        info.apkName == null ? "-" : info.apkName))
+                .setPositiveButton("OK", null)
+                .setNeutralButton(activity.getString(R.string.open_releases_page), (d, w) -> openReleasesPage(activity))
+                .show();
+    }
+
+    private static void showUpdateErrorDialog(Activity activity, Exception e) {
+        String msg = activity.getString(R.string.update_check_failed_details, REPO, safeMsg(e));
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.update_check_failed_title))
+                .setMessage(msg)
+                .setPositiveButton("OK", null)
+                .setNeutralButton(activity.getString(R.string.open_releases_page), (d, w) -> openReleasesPage(activity))
                 .show();
     }
 
     private static ReleaseInfo fetchLatestRelease() throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(LATEST_RELEASE_URL).openConnection();
-        conn.setConnectTimeout(6000);
-        conn.setReadTimeout(8000);
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(10000);
         conn.setRequestProperty("Accept", "application/vnd.github+json");
         conn.setRequestProperty("User-Agent", "AdGuard-TV-DNS-Pro-Updater");
         int code = conn.getResponseCode();
         InputStream stream = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
         String body = readAll(stream);
-        if (code < 200 || code >= 300) throw new Exception("HTTP " + code + ": " + body);
+        if (code == 404) throw new Exception("HTTP 404: no public GitHub Release found. Create a tag like v3.5 and wait for Actions to publish the release.");
+        if (code < 200 || code >= 300) throw new Exception("HTTP " + code + ": " + trim(body, 260));
+
         JSONObject json = new JSONObject(body);
         ReleaseInfo info = new ReleaseInfo();
         info.tagName = json.optString("tag_name", "");
         info.name = json.optString("name", "");
+        info.body = json.optString("body", "");
+        info.versionCode = parseVersionCode(info.body);
+        if (info.versionCode <= 0) info.versionCode = parseVersionCode(info.tagName + "\n" + info.name);
+
         JSONArray assets = json.optJSONArray("assets");
         if (assets != null) {
             for (int i = 0; i < assets.length(); i++) {
@@ -89,13 +150,24 @@ final class AppUpdateManager {
                 }
             }
         }
-        if (info.downloadUrl == null || info.downloadUrl.length() == 0) throw new Exception("No APK asset in latest release");
+        if (info.downloadUrl == null || info.downloadUrl.length() == 0) {
+            throw new Exception("Latest release exists, but it has no APK asset. Check Actions > Publish GitHub Release on tag.");
+        }
         return info;
+    }
+
+    private static int parseVersionCode(String text) {
+        if (text == null) return -1;
+        Matcher m = Pattern.compile("versionCode\\s*[:=]\\s*(\\d+)", Pattern.CASE_INSENSITIVE).matcher(text);
+        if (m.find()) {
+            try { return Integer.parseInt(m.group(1)); } catch (Exception ignored) {}
+        }
+        return -1;
     }
 
     private static void downloadAndInstall(Activity activity, ReleaseInfo info) {
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && !activity.getPackageManager().canRequestPackageInstalls()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.getPackageManager().canRequestPackageInstalls()) {
                 new AlertDialog.Builder(activity)
                         .setTitle(activity.getString(R.string.install_permission_needed))
                         .setMessage(activity.getString(R.string.install_permission_message))
@@ -140,20 +212,33 @@ final class AppUpdateManager {
                     }
                 }
             };
-            activity.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            if (Build.VERSION.SDK_INT >= 33) {
+                activity.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED);
+            } else {
+                activity.registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            }
         } catch (Exception e) {
-            DebugLog.log(activity, "SYSTEM", "Update download failed: " + e.getClass().getSimpleName());
+            DebugLog.log(activity, "SYSTEM", "Update download failed: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
             Toast.makeText(activity, activity.getString(R.string.update_download_failed), Toast.LENGTH_LONG).show();
         }
     }
 
-    private static String getCurrentVersionName(Context context) {
+    private static VersionInfo getCurrentVersion(Context context) {
+        VersionInfo out = new VersionInfo();
         try {
             PackageInfo pi = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            return pi.versionName == null ? "unknown" : pi.versionName;
+            out.name = pi.versionName == null ? "unknown" : pi.versionName;
+            if (Build.VERSION.SDK_INT >= 28) out.code = (int) pi.getLongVersionCode(); else out.code = pi.versionCode;
         } catch (Exception e) {
-            return "unknown";
+            out.name = "unknown";
+            out.code = -1;
         }
+        return out;
+    }
+
+    private static boolean isNewer(VersionInfo current, ReleaseInfo latest) {
+        if (latest.versionCode > 0 && current.code > 0) return latest.versionCode > current.code;
+        return isDifferentVersion(current.name, latest.tagName, latest.name);
     }
 
     private static boolean isDifferentVersion(String current, String tag, String name) {
@@ -169,7 +254,15 @@ final class AppUpdateManager {
         if (value == null) return "";
         String v = value.toLowerCase().trim();
         if (v.startsWith("v")) v = v.substring(1);
-        return v.replace("release", "").replace("updater", "").replace("debug", "").replace("_", "-");
+        return v.replace("release", "").replace("updater", "").replace("debug", "").replace("test", "").replace("_", "-");
+    }
+
+    private static void openReleasesPage(Activity activity) {
+        try {
+            activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_PAGE_URL)));
+        } catch (Exception e) {
+            Toast.makeText(activity, activity.getString(R.string.open_settings_failed), Toast.LENGTH_LONG).show();
+        }
     }
 
     private static String readAll(InputStream in) throws Exception {
@@ -185,11 +278,30 @@ final class AppUpdateManager {
         return name.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
+    private static String safeMsg(Exception e) {
+        if (e == null) return "unknown";
+        String msg = e.getMessage();
+        return msg == null || msg.trim().isEmpty() ? e.getClass().getSimpleName() : msg;
+    }
+
+    private static String trim(String value, int max) {
+        if (value == null) return "";
+        return value.length() <= max ? value : value.substring(0, max) + "...";
+    }
+
+    private static final class VersionInfo {
+        String name;
+        int code;
+        String displayName() { return name + " (" + code + ")"; }
+    }
+
     private static final class ReleaseInfo {
         String tagName;
         String name;
+        String body;
         String apkName;
         String downloadUrl;
+        int versionCode = -1;
         String displayName() {
             if (tagName != null && !tagName.isEmpty()) return tagName;
             if (name != null && !name.isEmpty()) return name;

@@ -16,8 +16,8 @@ android {
         applicationId 'pl.abcit.adguardtvdns'
         minSdk 23
         targetSdk 29
-        versionCode 34
-        versionName '3.4-release-updater'
+        versionCode 35
+        versionName '3.5-updater-test'
     }
 
     signingConfigs {
@@ -52,6 +52,8 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    // GitHub sideload release: this project is not published to Google Play.
+    // Keep targetSdk 29 for Android TV 10/VPN compatibility and disable only the Play target-SDK lint gate.
     lint {
         disable 'ExpiredTargetSdkVersion'
         checkReleaseBuilds false

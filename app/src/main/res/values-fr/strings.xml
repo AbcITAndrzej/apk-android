@@ -43,4 +43,11 @@
     <string name="clear_cache">Vider le cache / journaux</string>
     <string name="cache_cleared">Cache et journaux effacés</string>
     <string name="power_button_hint">Bouton marche/arrêt : connecter ou arrêter le VPN DNS</string>
+    <string name="build_flavor">v3.5 test de mise à jour</string>
+    <string name="test_update_source">Tester GitHub Releases</string>
+    <string name="testing_update_source">Test de la source de mise à jour…</string>
+    <string name="update_source_ok">GitHub Releases fonctionne</string>
+    <string name="open_releases_page">Ouvrir Releases</string>
+    <string name="update_check_failed_title">Échec de la vérification</string>
+    <string name="language_hint">Choisissez la langue. Certaines langues sont en bêta et peuvent revenir à l’anglais.</string>
 </resources>

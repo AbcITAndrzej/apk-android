@@ -142,7 +142,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.4 release updater");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.5 updater test");
     }
 
     @Override protected void onResume() {
@@ -494,10 +494,10 @@ public class MainActivity extends Activity {
         LinearLayout stats = card(0xFF101A29, 0xFF303D51);
         root.addView(stats, matchWrap());
         stats.addView(text(getString(R.string.stats), 21, true, 0xFFFFFFFF));
-        logStatsText = text("", 15, false, 0xFFE8EEF8);
+        logStatsText = text("", 15, false, isLightTheme() ? 0xFF102033 : 0xFFE8EEF8);
         logStatsText.setTypeface(Typeface.MONOSPACE);
         logStatsText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        logStatsText.setBackground(makeSolid(0xFF08111D, 16, 0xFF263143, 1));
+        logStatsText.setBackground(makeSolid(isLightTheme() ? 0xFFFFFFFF : 0xFF08111D, 16, isLightTheme() ? 0xFFCAD7E8 : 0xFF263143, 1));
         stats.addView(logStatsText, matchWrap());
 
         LinearLayout prefs = new LinearLayout(this);
@@ -773,7 +773,7 @@ public class MainActivity extends Activity {
         Map<String, List<String>> grouped = DebugLog.readGrouped(this);
         if (grouped.isEmpty()) {
             LinearLayout empty = card(0xFF101A29, 0xFF303D51);
-            empty.addView(text(getString(R.string.log_empty), 16, false, 0xFFFFFFFF));
+            empty.addView(text(getString(R.string.log_empty), 16, false, isLightTheme() ? 0xFF102033 : 0xFFFFFFFF));
             groupedLogsLayout.addView(empty, matchWrap());
             return;
         }
@@ -782,10 +782,10 @@ public class MainActivity extends Activity {
             LinearLayout groupCard = card(0xFF101A29, 0xFF303D51);
             String title = displayGroupName(entry.getKey());
             groupCard.addView(text(title, 20, true, 0xFFFFFFFF));
-            TextView body = text(join(entry.getValue()), 13, false, 0xFFE8EEF8);
+            TextView body = text(join(entry.getValue()), 13, false, isLightTheme() ? 0xFF102033 : 0xFFE8EEF8);
             body.setTypeface(Typeface.MONOSPACE);
             body.setPadding(dp(12), dp(10), dp(12), dp(10));
-            body.setBackground(makeSolid(0xFF08111D, 14, 0xFF263143, 1));
+            body.setBackground(makeSolid(isLightTheme() ? 0xFFFFFFFF : 0xFF08111D, 14, isLightTheme() ? 0xFFCAD7E8 : 0xFF263143, 1));
             groupCard.addView(body, matchWrap());
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             lp.setMargins(0, 0, 0, dp(12));
@@ -1391,32 +1391,32 @@ public class MainActivity extends Activity {
         out.add(new LanguageOption("de", "Deutsch"));
         out.add(new LanguageOption("fr", "Français"));
         out.add(new LanguageOption("nl", "Nederlands"));
-        out.add(new LanguageOption("es", "Español"));
-        out.add(new LanguageOption("it", "Italiano"));
-        out.add(new LanguageOption("pt", "Português"));
-        out.add(new LanguageOption("cs", "Čeština"));
-        out.add(new LanguageOption("sk", "Slovenčina"));
-        out.add(new LanguageOption("hu", "Magyar"));
-        out.add(new LanguageOption("ro", "Română"));
-        out.add(new LanguageOption("bg", "Български"));
-        out.add(new LanguageOption("el", "Ελληνικά"));
-        out.add(new LanguageOption("hr", "Hrvatski"));
-        out.add(new LanguageOption("sl", "Slovenščina"));
-        out.add(new LanguageOption("sr", "Srpski"));
-        out.add(new LanguageOption("sq", "Shqip"));
-        out.add(new LanguageOption("da", "Dansk"));
-        out.add(new LanguageOption("sv", "Svenska"));
-        out.add(new LanguageOption("fi", "Suomi"));
-        out.add(new LanguageOption("et", "Eesti"));
-        out.add(new LanguageOption("lv", "Latviešu"));
-        out.add(new LanguageOption("lt", "Lietuvių"));
-        out.add(new LanguageOption("ga", "Gaeilge"));
-        out.add(new LanguageOption("mt", "Malti"));
-        out.add(new LanguageOption("is", "Íslenska"));
-        out.add(new LanguageOption("no", "Norsk"));
-        out.add(new LanguageOption("uk", "Українська"));
-        out.add(new LanguageOption("ru", "Русский"));
-        out.add(new LanguageOption("tr", "Türkçe"));
+        out.add(new LanguageOption("es", "Español beta"));
+        out.add(new LanguageOption("it", "Italiano beta"));
+        out.add(new LanguageOption("pt", "Português beta"));
+        out.add(new LanguageOption("cs", "Čeština beta"));
+        out.add(new LanguageOption("sk", "Slovenčina beta"));
+        out.add(new LanguageOption("hu", "Magyar beta"));
+        out.add(new LanguageOption("ro", "Română beta"));
+        out.add(new LanguageOption("bg", "Български beta"));
+        out.add(new LanguageOption("el", "Ελληνικά beta"));
+        out.add(new LanguageOption("hr", "Hrvatski beta"));
+        out.add(new LanguageOption("sl", "Slovenščina beta"));
+        out.add(new LanguageOption("sr", "Srpski beta"));
+        out.add(new LanguageOption("sq", "Shqip beta"));
+        out.add(new LanguageOption("da", "Dansk beta"));
+        out.add(new LanguageOption("sv", "Svenska beta"));
+        out.add(new LanguageOption("fi", "Suomi beta"));
+        out.add(new LanguageOption("et", "Eesti beta"));
+        out.add(new LanguageOption("lv", "Latviešu beta"));
+        out.add(new LanguageOption("lt", "Lietuvių beta"));
+        out.add(new LanguageOption("ga", "Gaeilge beta"));
+        out.add(new LanguageOption("mt", "Malti beta"));
+        out.add(new LanguageOption("is", "Íslenska beta"));
+        out.add(new LanguageOption("no", "Norsk beta"));
+        out.add(new LanguageOption("uk", "Українська beta"));
+        out.add(new LanguageOption("ru", "Русский beta"));
+        out.add(new LanguageOption("tr", "Türkçe beta"));
         return out;
     }
 
@@ -1543,6 +1543,15 @@ public class MainActivity extends Activity {
         Button logs = neutralButton(getString(R.string.export_diagnostic_logs));
         logs.setOnClickListener(v -> exportLogsToFile());
         row.addView(logs, new LinearLayout.LayoutParams(0, dp(58), 1));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(10), 0, 0);
+        card.addView(row2, matchWrap());
+        Button testSource = neutralButton(getString(R.string.test_update_source));
+        testSource.setOnClickListener(v -> AppUpdateManager.testReleaseSource(this));
+        row2.addView(testSource, new LinearLayout.LayoutParams(0, dp(58), 1));
+
         TextView always = text(getString(R.string.always_on_hint), 13, false, 0xFFB8C4D8);
         always.setPadding(0, dp(10), 0, 0);
         card.addView(always);
@@ -1695,8 +1704,8 @@ public class MainActivity extends Activity {
 
     private EditText editText(String hintOrValue) {
         EditText e = new EditText(this);
-        e.setTextColor(Color.WHITE);
-        e.setHintTextColor(0xFF7D8EA8);
+        e.setTextColor(isLightTheme() ? 0xFF102033 : Color.WHITE);
+        e.setHintTextColor(isLightTheme() ? 0xFF65758A : 0xFF7D8EA8);
         e.setTextSize(16);
         e.setSingleLine(true);
         e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
@@ -1710,7 +1719,7 @@ public class MainActivity extends Activity {
         e.setSelectAllOnFocus(false);
         e.setFocusable(true);
         e.setFocusableInTouchMode(true);
-        e.setBackground(makeSolid(0xFF08111D, 14, 0xFF476D9B, 2));
+        e.setBackground(makeSolid(isLightTheme() ? 0xFFFFFFFF : 0xFF08111D, 14, isLightTheme() ? 0xFF9AB6D8 : 0xFF476D9B, 2));
         e.setOnClickListener(v -> showKeyboard(e));
         return e;
     }

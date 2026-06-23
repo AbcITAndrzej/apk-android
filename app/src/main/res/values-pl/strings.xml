@@ -63,7 +63,7 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.4 release updater</string>
+    <string name="build_flavor">v3.5 test aktualizacji</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -98,7 +98,7 @@
     <string name="cloud_beta_hint">Synchronizacja z chmurą jest zaplanowana na przyszłą wersję. Lokalny eksport/import działa już teraz.</string>
     <string name="cloud_beta_not_ready">Zapis do chmury nie jest jeszcze gotowy.</string>
     <string name="language">Język</string>
-    <string name="language_hint">Wybierz język aplikacji. Brakujące tłumaczenia wracają do angielskiego.</string>
+    <string name="language_hint">Wybierz język aplikacji. PL/EN/DE/FR/NL są najbardziej kompletne. Pozostałe języki są beta i mogą wracać do angielskiego.</string>
     <string name="language_system">Język systemu</string>
     <string name="language_changed">Język zmieniony</string>
 
@@ -130,21 +130,48 @@
     <string name="version_label">Wersja</string>
     <string name="check_update">Sprawdź aktualizację</string>
     <string name="checking_update">Sprawdzam aktualizację…</string>
-    <string name="no_update_available">Brak nowej wersji.</string>
+    <string name="no_update_available">Brak nowszej wersji.</string>
     <string name="update_check_failed">Nie udało się sprawdzić aktualizacji. GitHub Release może jeszcze nie istnieć.</string>
     <string name="update_available">Dostępna aktualizacja</string>
     <string name="update_available_message">Obecna: %1$s
 Najnowsza: %2$s
 Pobrać i otworzyć instalator Androida?</string>
     <string name="download_update">Pobierz aktualizację</string>
-    <string name="downloading_update">Pobieranie aktualizacji…</string>
-    <string name="update_download_failed">Pobieranie aktualizacji nie powiodło się.</string>
-    <string name="update_downloaded_open_failed">Pobrano, ale Android nie otworzył instalatora.</string>
-    <string name="install_permission_needed">Wymagana zgoda instalacji</string>
-    <string name="install_permission_message">Zezwól tej aplikacji na instalowanie aktualizacji APK, potem sprawdź aktualizację jeszcze raz.</string>
+    <string name="downloading_update">Pobieram aktualizację…</string>
+    <string name="update_download_failed">Nie udało się pobrać aktualizacji.</string>
+    <string name="update_downloaded_open_failed">Pobrano, ale nie udało się otworzyć instalatora Androida.</string>
+    <string name="install_permission_needed">Wymagane uprawnienie instalacji</string>
+    <string name="install_permission_message">Zezwól tej aplikacji na instalowanie aktualizacji APK, a potem sprawdź aktualizację ponownie.</string>
     <string name="open_settings">Otwórz ustawienia</string>
-    <string name="export_diagnostic_logs">Eksport logów diagnostycznych</string>
-    <string name="logs_exported">Logi diagnostyczne zapisane</string>
+    <string name="export_diagnostic_logs">Eksportuj logi diagnostyczne</string>
+    <string name="logs_exported">Logi diagnostyczne wyeksportowane</string>
     <string name="always_on_hint">Always-on VPN ustawia się w systemowych ustawieniach VPN Androida. Przycisk powyżej otwiera właściwe miejsce, jeśli firmware TV na to pozwala.</string>
 
+    <string name="test_update_source">Test GitHub Releases</string>
+    <string name="testing_update_source">Testuję źródło aktualizacji…</string>
+    <string name="update_source_ok">GitHub Releases działa</string>
+    <string name="update_source_ok_message">Repozytorium: %1$s
+Obecna wersja: %2$s
+Najnowsza wersja: %3$s
+Najnowszy versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
+    <string name="open_releases_page">Otwórz Releases</string>
+    <string name="update_check_failed_title">Nie udało się sprawdzić aktualizacji</string>
+    <string name="update_check_failed_details">Repozytorium: %1$s
+
+Powód: %2$s
+
+Lista kontroli:
+1. Repo musi być publiczne albo dostępne.
+2. Utwórz tag, np. v3.5.
+3. Poczekaj aż Actions opublikuje GitHub Release.
+4. Release musi zawierać plik APK.</string>
+    <string name="no_update_details">Obecna wersja: %1$s
+Najnowsza wersja: %2$s
+Najnowszy versionCode: %3$s
+APK: %4$s
+
+Updater działa. Po prostu nie ma nowszej wersji niż zainstalowana.</string>
+    <string name="light_theme_fixed">Poprawiono czytelność jasnego motywu</string>
 </resources>
