@@ -10,6 +10,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.VpnService;
 import android.os.Build;
@@ -20,14 +21,18 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,311 +41,552 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class MainActivity extends Activity {
     private static final int REQ_VPN = 42;
+    private static final int SCREEN_HOME = 0;
+    private static final int SCREEN_APPS = 1;
+    private static final int SCREEN_SERVERS = 2;
+    private static final int SCREEN_LOGS = 3;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final List<AppRow> appRows = new ArrayList<>();
+    private final List<AppItem> apps = new ArrayList<>();
+    private final Map<String, String> appLabels = new LinkedHashMap<>();
+    private final List<ServerPreset> presets = new ArrayList<>();
 
-    private EditText dns1Input;
-    private EditText dns2Input;
-    private EditText searchInput;
-    private CheckBox allAppsCheckbox;
+    private FrameLayout contentFrame;
+    private TextView titleView;
     private TextView statusBadge;
-    private TextView appCounterText;
-    private TextView debugStatsText;
-    private TextView debugLogText;
+    private Button tabHome;
+    private Button tabApps;
+    private Button tabServers;
+    private Button tabLogs;
+
+    private EditText appSearchInput;
     private LinearLayout appListLayout;
-    private LinearLayout appsPanel;
+    private TextView appCounterText;
+    private EditText customDns1;
+    private EditText customDns2;
+    private TextView homeStatsText;
+    private TextView logStatsText;
+    private LinearLayout groupedLogsLayout;
+
+    private int currentScreen = SCREEN_HOME;
+    private String appFilter = "";
 
     private final Runnable refreshRunnable = new Runnable() {
-        @Override
-        public void run() {
-            refreshDebugPanel();
-            handler.postDelayed(this, 1000);
+        @Override public void run() {
+            refreshStatusViews();
+            if (currentScreen == SCREEN_LOGS) renderLogsOnly();
+            handler.postDelayed(this, 1200);
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(buildUi());
-        loadSettings();
+        initPresets();
+        ensureDefaultSettings();
         loadApps();
-        filterApps("");
-        DebugLog.log(this, "Panel otwarty");
+        setContentView(buildRoot());
+        showScreen(SCREEN_HOME);
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.0 pro debug");
     }
 
-    @Override
-    protected void onResume() {
+    @Override protected void onResume() {
         super.onResume();
-        refreshDebugPanel();
+        refreshStatusViews();
+        handler.removeCallbacks(refreshRunnable);
         handler.post(refreshRunnable);
     }
 
-    @Override
-    protected void onPause() {
-        saveSettings();
+    @Override protected void onPause() {
         handler.removeCallbacks(refreshRunnable);
         super.onPause();
     }
 
-    private View buildUi() {
-        ScrollView scrollView = new ScrollView(this);
-        scrollView.setFillViewport(true);
-        scrollView.setBackground(makeBackground(0xFF07111F, 0xFF111827, 0));
-
+    private View buildRoot() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(34), dp(28), dp(34), dp(34));
-        scrollView.addView(root, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT
-        ));
+        root.setBackground(makeGradient(0xFF121D2B, 0xFF0A111D));
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        root.addView(header, matchWrap());
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(dp(22), dp(14), dp(22), dp(12));
+        top.setBackground(makeSolid(0xFF1D2A3A, 0, 0xFF1D2A3A, 0));
+        root.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
 
-        LinearLayout titleBox = new LinearLayout(this);
-        titleBox.setOrientation(LinearLayout.VERTICAL);
-        header.addView(titleBox, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        Button back = miniButton("‹");
+        back.setTextSize(34);
+        back.setOnClickListener(v -> showScreen(SCREEN_HOME));
+        top.addView(back, new LinearLayout.LayoutParams(dp(64), dp(54)));
 
-        TextView title = text("AdGuard TV DNS Pro", 30, true, 0xFFFFFFFF);
-        titleBox.addView(title);
+        titleView = text(getString(R.string.app_name), 24, true, 0xFFFFFFFF);
+        titleView.setPadding(dp(14), 0, 0, 0);
+        top.addView(titleView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView subtitle = text("Lekki DNS przez lokalny VPN • Android TV • wybór aplikacji • debug", 15, false, 0xFFB6C2D6);
-        subtitle.setPadding(0, dp(3), 0, 0);
-        titleBox.addView(subtitle);
-
-        statusBadge = text("STATUS", 18, true, 0xFFFFFFFF);
+        statusBadge = text("...", 14, true, 0xFFFFFFFF);
         statusBadge.setGravity(Gravity.CENTER);
-        statusBadge.setPadding(dp(18), dp(10), dp(18), dp(10));
-        header.addView(statusBadge, new LinearLayout.LayoutParams(dp(210), dp(54)));
+        statusBadge.setPadding(dp(12), dp(8), dp(12), dp(8));
+        top.addView(statusBadge, new LinearLayout.LayoutParams(dp(145), dp(46)));
 
-        root.addView(spacer(1, 18));
-        root.addView(buildDnsCard());
-        root.addView(spacer(1, 18));
-        root.addView(buildAppsCard());
-        root.addView(spacer(1, 18));
-        root.addView(buildDebugCard());
+        contentFrame = new FrameLayout(this);
+        root.addView(contentFrame, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
-        return scrollView;
+        LinearLayout bottom = new LinearLayout(this);
+        bottom.setOrientation(LinearLayout.HORIZONTAL);
+        bottom.setGravity(Gravity.CENTER);
+        bottom.setPadding(dp(12), dp(10), dp(12), dp(10));
+        bottom.setBackground(makeSolid(0xFF111B28, 0, 0xFF263143, 1));
+        root.addView(bottom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(92)));
+
+        tabHome = navButton("⌂\n" + getString(R.string.home));
+        tabApps = navButton("▦\n" + getString(R.string.apps));
+        tabServers = navButton("▤\n" + getString(R.string.servers));
+        tabLogs = navButton("◎\n" + getString(R.string.logs));
+        tabHome.setOnClickListener(v -> showScreen(SCREEN_HOME));
+        tabApps.setOnClickListener(v -> showScreen(SCREEN_APPS));
+        tabServers.setOnClickListener(v -> showScreen(SCREEN_SERVERS));
+        tabLogs.setOnClickListener(v -> showScreen(SCREEN_LOGS));
+        bottom.addView(tabHome, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(gap(8, 1));
+        bottom.addView(tabApps, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(gap(8, 1));
+        bottom.addView(tabServers, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(gap(8, 1));
+        bottom.addView(tabLogs, new LinearLayout.LayoutParams(0, dp(72), 1));
+
+        return root;
     }
 
-    private View buildDnsCard() {
-        LinearLayout card = card(0xFF111C2E, 0xFF24324A);
+    private void showScreen(int screen) {
+        currentScreen = screen;
+        contentFrame.removeAllViews();
+        updateNavSelected();
+        if (screen == SCREEN_HOME) {
+            titleView.setText(getString(R.string.app_name));
+            contentFrame.addView(scroll(buildHomeScreen()));
+        } else if (screen == SCREEN_APPS) {
+            titleView.setText(getString(R.string.apps));
+            contentFrame.addView(scroll(buildAppsScreen()));
+        } else if (screen == SCREEN_SERVERS) {
+            titleView.setText(getString(R.string.servers));
+            contentFrame.addView(scroll(buildServersScreen()));
+        } else {
+            titleView.setText(getString(R.string.logs));
+            contentFrame.addView(scroll(buildLogsScreen()));
+        }
+        refreshStatusViews();
+    }
 
-        TextView section = text("1. Połączenie", 22, true, 0xFFFFFFFF);
-        card.addView(section);
+    private View buildHomeScreen() {
+        LinearLayout root = screenRoot();
 
-        TextView hint = text("Domyślnie używa AdGuard DNS: 94.140.14.14 oraz 94.140.15.15. Możesz wpisać własne DNS IPv4.", 15, false, 0xFFB6C2D6);
-        hint.setPadding(0, dp(4), 0, dp(14));
-        card.addView(hint);
+        LinearLayout hero = card(0xFF172435, 0xFF34445C);
+        hero.setGravity(Gravity.CENTER_HORIZONTAL);
+        root.addView(hero, matchWrap());
 
-        LinearLayout dnsRow = new LinearLayout(this);
-        dnsRow.setOrientation(LinearLayout.HORIZONTAL);
-        card.addView(dnsRow, matchWrap());
+        TextView logo = text("✦", 74, true, 0xFFD9DEE7);
+        logo.setGravity(Gravity.CENTER);
+        logo.setBackground(makeSolid(0xFF263548, 160, 0xFF6EADEB, 2));
+        hero.addView(logo, new LinearLayout.LayoutParams(dp(154), dp(154)));
 
-        LinearLayout left = new LinearLayout(this);
-        left.setOrientation(LinearLayout.VERTICAL);
-        dnsRow.addView(left, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        left.addView(label("DNS 1"));
-        dns1Input = editText("94.140.14.14");
-        left.addView(dns1Input);
+        hero.addView(space(1, 18));
+        TextView serverLabel = text(getString(R.string.current_server) + ":", 16, false, 0xFFB8C4D8);
+        serverLabel.setGravity(Gravity.CENTER);
+        hero.addView(serverLabel, matchWrap());
 
-        dnsRow.addView(spacer(14, 1));
+        TextView serverName = text(getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS") + "  →", 30, true, 0xFFFFFFFF);
+        serverName.setGravity(Gravity.CENTER);
+        serverName.setPadding(0, dp(4), 0, dp(10));
+        serverName.setFocusable(true);
+        serverName.setOnClickListener(v -> showScreen(SCREEN_SERVERS));
+        applyFocus(serverName, 0x00000000, 0xFF1E3655, 18);
+        hero.addView(serverName, matchWrap());
 
-        LinearLayout right = new LinearLayout(this);
-        right.setOrientation(LinearLayout.VERTICAL);
-        dnsRow.addView(right, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-        right.addView(label("DNS 2"));
-        dns2Input = editText("94.140.15.15");
-        right.addView(dns2Input);
+        LinearLayout shortcuts = new LinearLayout(this);
+        shortcuts.setOrientation(LinearLayout.HORIZONTAL);
+        shortcuts.setGravity(Gravity.CENTER);
+        hero.addView(shortcuts, matchWrap());
+
+        Button appsButton = bigIconButton("▦\n" + getString(R.string.apps));
+        appsButton.setOnClickListener(v -> showScreen(SCREEN_APPS));
+        shortcuts.addView(appsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(gap(14, 1));
+
+        Button serversButton = bigIconButton("▤\n" + getString(R.string.servers));
+        serversButton.setOnClickListener(v -> showScreen(SCREEN_SERVERS));
+        shortcuts.addView(serversButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(gap(14, 1));
+
+        Button logsButton = bigIconButton("◎\n" + getString(R.string.logs));
+        logsButton.setOnClickListener(v -> showScreen(SCREEN_LOGS));
+        shortcuts.addView(logsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+
+        hero.addView(space(1, 24));
+        LinearLayout connectRow = new LinearLayout(this);
+        connectRow.setOrientation(LinearLayout.HORIZONTAL);
+        connectRow.setGravity(Gravity.CENTER);
+        hero.addView(connectRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(74)));
+
+        Button off = segmentedButton(getString(R.string.off), false);
+        off.setOnClickListener(v -> stopDnsVpn());
+        connectRow.addView(off, new LinearLayout.LayoutParams(0, dp(62), 1));
+        connectRow.addView(gap(10, 1));
+        Button on = segmentedButton(getString(R.string.on), true);
+        on.setOnClickListener(v -> startDnsVpn());
+        connectRow.addView(on, new LinearLayout.LayoutParams(0, dp(62), 1));
+
+        root.addView(space(1, 16));
+        LinearLayout statsCard = card(0xFF111A28, 0xFF303D51);
+        root.addView(statsCard, matchWrap());
+        TextView header = text(getString(R.string.stats), 20, true, 0xFFFFFFFF);
+        statsCard.addView(header);
+        homeStatsText = text("", 15, false, 0xFFE8EEF8);
+        homeStatsText.setTypeface(Typeface.MONOSPACE);
+        homeStatsText.setPadding(dp(14), dp(12), dp(14), dp(12));
+        homeStatsText.setBackground(makeSolid(0xFF08111D, 16, 0xFF263143, 1));
+        statsCard.addView(homeStatsText, matchWrap());
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
-        actions.setPadding(0, dp(18), 0, 0);
-        card.addView(actions, matchWrap());
-
-        Button connect = primaryButton("CONNECT");
+        actions.setPadding(0, dp(14), 0, 0);
+        statsCard.addView(actions, matchWrap());
+        Button connect = primaryButton(getString(R.string.connect));
         connect.setOnClickListener(v -> startDnsVpn());
-        actions.addView(connect, new LinearLayout.LayoutParams(0, dp(62), 1));
-
-        actions.addView(spacer(12, 1));
-
-        Button stop = dangerButton("STOP");
+        actions.addView(connect, new LinearLayout.LayoutParams(0, dp(58), 1));
+        actions.addView(gap(12, 1));
+        Button stop = dangerButton(getString(R.string.stop));
         stop.setOnClickListener(v -> stopDnsVpn());
-        actions.addView(stop, new LinearLayout.LayoutParams(0, dp(62), 1));
+        actions.addView(stop, new LinearLayout.LayoutParams(0, dp(58), 1));
 
-        actions.addView(spacer(12, 1));
-
-        Button defaults = neutralButton("AdGuard default");
-        defaults.setOnClickListener(v -> {
-            dns1Input.setText("94.140.14.14");
-            dns2Input.setText("94.140.15.15");
-            saveSettings();
-            toast("Ustawiono domyślne DNS AdGuard");
-        });
-        actions.addView(defaults, new LinearLayout.LayoutParams(0, dp(62), 1));
-
-        return card;
+        return root;
     }
 
-    private View buildAppsCard() {
-        appsPanel = card(0xFF101827, 0xFF283448);
+    private View buildServersScreen() {
+        LinearLayout root = screenRoot();
 
-        TextView section = text("2. Aplikacje", 22, true, 0xFFFFFFFF);
-        appsPanel.addView(section);
-
-        TextView hint = text("Wybierz, czy DNS ma działać dla całego Android TV, czy tylko dla wskazanych aplikacji.", 15, false, 0xFFB6C2D6);
+        LinearLayout custom = card(0xFF152235, 0xFF34445C);
+        root.addView(custom, matchWrap());
+        custom.addView(text(getString(R.string.custom_server), 21, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.focus_hint), 14, false, 0xFFB8C4D8);
         hint.setPadding(0, dp(4), 0, dp(12));
-        appsPanel.addView(hint);
+        custom.addView(hint);
 
-        allAppsCheckbox = new CheckBox(this);
-        allAppsCheckbox.setText("Wszystkie aplikacje korzystają z tego DNS");
-        allAppsCheckbox.setTextColor(Color.WHITE);
-        allAppsCheckbox.setTextSize(19);
-        allAppsCheckbox.setButtonTintList(null);
-        allAppsCheckbox.setFocusable(true);
-        allAppsCheckbox.setPadding(0, dp(6), 0, dp(10));
-        allAppsCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            updateAppListEnabled();
-            saveSettings();
-        });
-        appsPanel.addView(allAppsCheckbox, matchWrap());
+        LinearLayout dnsRow = new LinearLayout(this);
+        dnsRow.setOrientation(LinearLayout.HORIZONTAL);
+        custom.addView(dnsRow, matchWrap());
+        LinearLayout left = vertical();
+        left.addView(label(getString(R.string.dns_1)));
+        customDns1 = editText(getPrefs().getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
+        left.addView(customDns1, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58)));
+        dnsRow.addView(left, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        dnsRow.addView(gap(12, 1));
+        LinearLayout right = vertical();
+        right.addView(label(getString(R.string.dns_2)));
+        customDns2 = editText(getPrefs().getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
+        right.addView(customDns2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58)));
+        dnsRow.addView(right, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        Button save = primaryButton("＋  " + getString(R.string.save_custom));
+        save.setOnClickListener(v -> saveCustomServer());
+        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
+        saveParams.setMargins(0, dp(12), 0, 0);
+        custom.addView(save, saveParams);
+
+        root.addView(space(1, 16));
+        LinearLayout listCard = card(0xFF101A29, 0xFF303D51);
+        root.addView(listCard, matchWrap());
+        listCard.addView(text(getString(R.string.server_presets), 21, true, 0xFFFFFFFF));
+        listCard.addView(space(1, 10));
+
+        for (ServerPreset preset : presets) {
+            listCard.addView(serverRow(preset));
+        }
+        return root;
+    }
+
+    private View buildAppsScreen() {
+        LinearLayout root = screenRoot();
+
+        LinearLayout intro = card(0xFF172435, 0xFF34445C);
+        root.addView(intro, matchWrap());
+        intro.addView(text(getString(R.string.intro_title), 21, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.choose_apps_hint), 15, false, 0xFFD5DEEC);
+        hint.setPadding(0, dp(6), 0, dp(10));
+        intro.addView(hint);
+
+        LinearLayout mode = new LinearLayout(this);
+        mode.setOrientation(LinearLayout.HORIZONTAL);
+        intro.addView(mode, matchWrap());
+        Button all = modeButton(getString(R.string.all_apps), isAllAppsMode());
+        all.setOnClickListener(v -> { setAllAppsMode(true); showScreen(SCREEN_APPS); });
+        mode.addView(all, new LinearLayout.LayoutParams(0, dp(58), 1));
+        mode.addView(gap(12, 1));
+        Button selected = modeButton(getString(R.string.selected_apps), !isAllAppsMode());
+        selected.setOnClickListener(v -> { setAllAppsMode(false); showScreen(SCREEN_APPS); });
+        mode.addView(selected, new LinearLayout.LayoutParams(0, dp(58), 1));
+
+        root.addView(space(1, 16));
+        LinearLayout tools = card(0xFF101A29, 0xFF303D51);
+        root.addView(tools, matchWrap());
 
         LinearLayout searchRow = new LinearLayout(this);
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
-        appsPanel.addView(searchRow, matchWrap());
-
-        searchInput = editText("Szukaj aplikacji, np. chrome, firefox, youtube...");
-        searchInput.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filterApps(String.valueOf(s)); }
-            @Override public void afterTextChanged(Editable s) { }
+        tools.addView(searchRow, matchWrap());
+        appSearchInput = editText(getString(R.string.search_apps));
+        appSearchInput.setSingleLine(true);
+        appSearchInput.setText(appFilter);
+        appSearchInput.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        appSearchInput.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) showKeyboard(appSearchInput); });
+        appSearchInput.setOnClickListener(v -> showKeyboard(appSearchInput));
+        appSearchInput.setOnEditorActionListener((v, actionId, event) -> {
+            boolean searchAction = actionId == EditorInfo.IME_ACTION_SEARCH || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
+            if (searchAction) {
+                appFilter = v.getText().toString();
+                renderAppList();
+                hideKeyboard(v);
+                return true;
+            }
+            return false;
         });
-        searchRow.addView(searchInput, new LinearLayout.LayoutParams(0, dp(58), 1));
+        appSearchInput.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { appFilter = String.valueOf(s); renderAppList(); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+        searchRow.addView(appSearchInput, new LinearLayout.LayoutParams(0, dp(58), 1));
+        searchRow.addView(gap(10, 1));
+        Button keyboard = neutralButton(getString(R.string.show_keyboard));
+        keyboard.setOnClickListener(v -> { appSearchInput.requestFocus(); showKeyboard(appSearchInput); });
+        searchRow.addView(keyboard, new LinearLayout.LayoutParams(dp(150), dp(58)));
 
-        searchRow.addView(spacer(12, 1));
+        LinearLayout bulkRow1 = new LinearLayout(this);
+        bulkRow1.setOrientation(LinearLayout.HORIZONTAL);
+        bulkRow1.setPadding(0, dp(12), 0, 0);
+        tools.addView(bulkRow1, matchWrap());
+        Button selectVisible = neutralButton(getString(R.string.select_visible));
+        selectVisible.setOnClickListener(v -> setVisibleSelected(true));
+        bulkRow1.addView(selectVisible, new LinearLayout.LayoutParams(0, dp(54), 1));
+        bulkRow1.addView(gap(10, 1));
+        Button clearVisible = neutralButton(getString(R.string.clear_visible));
+        clearVisible.setOnClickListener(v -> setVisibleSelected(false));
+        bulkRow1.addView(clearVisible, new LinearLayout.LayoutParams(0, dp(54), 1));
 
-        Button clearSearch = neutralButton("Wyczyść");
-        clearSearch.setOnClickListener(v -> searchInput.setText(""));
-        searchRow.addView(clearSearch, new LinearLayout.LayoutParams(dp(150), dp(58)));
+        LinearLayout bulkRow2 = new LinearLayout(this);
+        bulkRow2.setOrientation(LinearLayout.HORIZONTAL);
+        bulkRow2.setPadding(0, dp(10), 0, 0);
+        tools.addView(bulkRow2, matchWrap());
+        Button selectAll = neutralButton(getString(R.string.select_all));
+        selectAll.setOnClickListener(v -> setAllSelected(true));
+        bulkRow2.addView(selectAll, new LinearLayout.LayoutParams(0, dp(54), 1));
+        bulkRow2.addView(gap(10, 1));
+        Button clearAll = neutralButton(getString(R.string.clear_all));
+        clearAll.setOnClickListener(v -> setAllSelected(false));
+        bulkRow2.addView(clearAll, new LinearLayout.LayoutParams(0, dp(54), 1));
 
-        LinearLayout selectRow = new LinearLayout(this);
-        selectRow.setOrientation(LinearLayout.HORIZONTAL);
-        selectRow.setPadding(0, dp(12), 0, dp(10));
-        appsPanel.addView(selectRow, matchWrap());
-
-        Button selectVisible = neutralButton("Zaznacz widoczne");
-        selectVisible.setOnClickListener(v -> setVisibleRowsChecked(true));
-        selectRow.addView(selectVisible, new LinearLayout.LayoutParams(0, dp(56), 1));
-
-        selectRow.addView(spacer(10, 1));
-
-        Button clearVisible = neutralButton("Odznacz widoczne");
-        clearVisible.setOnClickListener(v -> setVisibleRowsChecked(false));
-        selectRow.addView(clearVisible, new LinearLayout.LayoutParams(0, dp(56), 1));
-
-        selectRow.addView(spacer(10, 1));
-
-        Button selectAll = neutralButton("Zaznacz wszystkie");
-        selectAll.setOnClickListener(v -> setAllRowsChecked(true));
-        selectRow.addView(selectAll, new LinearLayout.LayoutParams(0, dp(56), 1));
-
-        selectRow.addView(spacer(10, 1));
-
-        Button clearAll = neutralButton("Odznacz wszystkie");
-        clearAll.setOnClickListener(v -> setAllRowsChecked(false));
-        selectRow.addView(clearAll, new LinearLayout.LayoutParams(0, dp(56), 1));
-
-        appCounterText = text("Ładowanie aplikacji...", 15, false, 0xFFB6C2D6);
-        appCounterText.setPadding(0, dp(4), 0, dp(8));
-        appsPanel.addView(appCounterText);
-
-        appListLayout = new LinearLayout(this);
-        appListLayout.setOrientation(LinearLayout.VERTICAL);
-        appsPanel.addView(appListLayout, matchWrap());
-
-        return appsPanel;
+        root.addView(space(1, 16));
+        LinearLayout listCard = card(0xFF101A29, 0xFF303D51);
+        root.addView(listCard, matchWrap());
+        appCounterText = text("", 15, false, 0xFFB8C4D8);
+        listCard.addView(appCounterText, matchWrap());
+        appListLayout = vertical();
+        appListLayout.setPadding(0, dp(10), 0, 0);
+        listCard.addView(appListLayout, matchWrap());
+        renderAppList();
+        return root;
     }
 
-    private View buildDebugCard() {
-        LinearLayout card = card(0xFF0D1624, 0xFF263143);
+    private View buildLogsScreen() {
+        LinearLayout root = screenRoot();
+        LinearLayout stats = card(0xFF101A29, 0xFF303D51);
+        root.addView(stats, matchWrap());
+        stats.addView(text(getString(R.string.stats), 21, true, 0xFFFFFFFF));
+        logStatsText = text("", 15, false, 0xFFE8EEF8);
+        logStatsText.setTypeface(Typeface.MONOSPACE);
+        logStatsText.setPadding(dp(14), dp(12), dp(14), dp(12));
+        logStatsText.setBackground(makeSolid(0xFF08111D, 16, 0xFF263143, 1));
+        stats.addView(logStatsText, matchWrap());
 
-        TextView section = text("3. Debug", 22, true, 0xFFFFFFFF);
-        card.addView(section);
-
-        TextView hint = text("Tu widać status VPN, liczniki DNS i ostatnie zdarzenia. Przy problemie zrób screen tego panelu.", 15, false, 0xFFB6C2D6);
-        hint.setPadding(0, dp(4), 0, dp(12));
-        card.addView(hint);
-
-        debugStatsText = text("Status: ...", 16, false, 0xFFFFFFFF);
-        debugStatsText.setTypeface(Typeface.MONOSPACE);
-        debugStatsText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        debugStatsText.setBackground(makeSolid(0xFF050B14, 14, 0xFF1E2A3B));
-        card.addView(debugStatsText, matchWrap());
-
-        LinearLayout logActions = new LinearLayout(this);
-        logActions.setOrientation(LinearLayout.HORIZONTAL);
-        logActions.setPadding(0, dp(12), 0, dp(10));
-        card.addView(logActions, matchWrap());
-
-        Button refresh = neutralButton("Odśwież");
-        refresh.setOnClickListener(v -> refreshDebugPanel());
-        logActions.addView(refresh, new LinearLayout.LayoutParams(0, dp(54), 1));
-
-        logActions.addView(spacer(10, 1));
-
-        Button copy = neutralButton("Kopiuj log");
-        copy.setOnClickListener(v -> copyLogToClipboard());
-        logActions.addView(copy, new LinearLayout.LayoutParams(0, dp(54), 1));
-
-        logActions.addView(spacer(10, 1));
-
-        Button clear = dangerButton("Wyczyść log");
-        clear.setOnClickListener(v -> {
-            DebugLog.clear(this);
-            refreshDebugPanel();
-            toast("Log wyczyszczony");
+        LinearLayout prefs = new LinearLayout(this);
+        prefs.setOrientation(LinearLayout.HORIZONTAL);
+        prefs.setPadding(0, dp(12), 0, 0);
+        stats.addView(prefs, matchWrap());
+        Button saver = modeButton(getString(R.string.battery_saver), getPrefs().getBoolean(DnsVpnService.PREF_BATTERY_SAVER, true));
+        saver.setOnClickListener(v -> {
+            boolean next = !getPrefs().getBoolean(DnsVpnService.PREF_BATTERY_SAVER, true);
+            getPrefs().edit().putBoolean(DnsVpnService.PREF_BATTERY_SAVER, next).apply();
+            showScreen(SCREEN_LOGS);
         });
-        logActions.addView(clear, new LinearLayout.LayoutParams(0, dp(54), 1));
+        prefs.addView(saver, new LinearLayout.LayoutParams(0, dp(58), 1));
 
-        debugLogText = text("", 14, false, 0xFFE5E7EB);
-        debugLogText.setTypeface(Typeface.MONOSPACE);
-        debugLogText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        debugLogText.setBackground(makeSolid(0xFF050B14, 14, 0xFF1E2A3B));
-        card.addView(debugLogText, matchWrap());
+        root.addView(space(1, 16));
+        LinearLayout actions = card(0xFF172435, 0xFF34445C);
+        root.addView(actions, matchWrap());
+        TextView saverHint = text(getString(R.string.battery_saver_hint), 14, false, 0xFFB8C4D8);
+        saverHint.setPadding(0, 0, 0, dp(10));
+        actions.addView(saverHint);
 
-        return card;
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        actions.addView(row, matchWrap());
+        Button refresh = neutralButton(getString(R.string.refresh));
+        refresh.setOnClickListener(v -> { refreshStatusViews(); renderLogsOnly(); });
+        row.addView(refresh, new LinearLayout.LayoutParams(0, dp(56), 1));
+        row.addView(gap(10, 1));
+        Button copy = neutralButton(getString(R.string.copy_logs));
+        copy.setOnClickListener(v -> copyLogToClipboard());
+        row.addView(copy, new LinearLayout.LayoutParams(0, dp(56), 1));
+        row.addView(gap(10, 1));
+        Button clear = dangerButton(getString(R.string.clear_logs));
+        clear.setOnClickListener(v -> { DebugLog.clear(this); renderLogsOnly(); toast(getString(R.string.cleared)); });
+        row.addView(clear, new LinearLayout.LayoutParams(0, dp(56), 1));
+
+        root.addView(space(1, 16));
+        groupedLogsLayout = vertical();
+        root.addView(groupedLogsLayout, matchWrap());
+        renderLogsOnly();
+        return root;
+    }
+
+    private void renderAppList() {
+        if (appListLayout == null) return;
+        appListLayout.removeAllViews();
+        Set<String> selected = getSelectedApps();
+        Set<String> logging = getLoggingApps();
+        boolean allApps = isAllAppsMode();
+        String q = appFilter == null ? "" : appFilter.trim().toLowerCase(Locale.US);
+        int visible = 0;
+        int selectedCount = selected.size();
+
+        for (AppItem item : apps) {
+            boolean show = q.isEmpty() || item.label.toLowerCase(Locale.US).contains(q) || item.packageName.toLowerCase(Locale.US).contains(q);
+            if (!show) continue;
+            visible++;
+            appListLayout.addView(appRow(item, allApps, selected.contains(item.packageName), logging.contains(item.packageName)));
+        }
+
+        if (appCounterText != null) {
+            String mode = allApps ? getString(R.string.all_apps) : getString(R.string.selected_apps_count, selectedCount);
+            appCounterText.setText(getString(R.string.installed_apps) + ": " + apps.size() + " / visible: " + visible + " / " + mode);
+        }
+        if (visible == 0) {
+            TextView empty = text(getString(R.string.no_apps_found), 16, false, 0xFFFFFFFF);
+            empty.setPadding(dp(12), dp(18), dp(12), dp(18));
+            appListLayout.addView(empty, matchWrap());
+        }
+    }
+
+    private View appRow(AppItem item, boolean allApps, boolean selected, boolean logging) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(12), dp(10), dp(12), dp(10));
+        row.setFocusable(true);
+        applyFocus(row, 0xFF172435, 0xFF243A58, 18);
+
+        ImageView icon = new ImageView(this);
+        if (item.icon != null) icon.setImageDrawable(item.icon);
+        row.addView(icon, new LinearLayout.LayoutParams(dp(52), dp(52)));
+
+        LinearLayout labels = vertical();
+        labels.setPadding(dp(14), 0, dp(8), 0);
+        TextView name = text(item.label, 18, true, 0xFFFFFFFF);
+        TextView pkg = text(item.packageName, 12, false, 0xFF8FA3BD);
+        labels.addView(name);
+        labels.addView(pkg);
+        row.addView(labels, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        Button dns = smallStateButton(allApps || selected ? getString(R.string.dns_enabled) : getString(R.string.dns_disabled), allApps || selected);
+        dns.setOnClickListener(v -> toggleAppSelected(item.packageName));
+        row.addView(dns, new LinearLayout.LayoutParams(dp(118), dp(54)));
+        row.addView(gap(8, 1));
+
+        Button log = smallStateButton(logging ? getString(R.string.log_enabled) : getString(R.string.log_disabled), logging);
+        log.setOnClickListener(v -> toggleAppLogging(item.packageName));
+        row.addView(log, new LinearLayout.LayoutParams(dp(112), dp(54)));
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(8));
+        row.setLayoutParams(lp);
+        return row;
+    }
+
+    private View serverRow(ServerPreset preset) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(12), dp(16), dp(12));
+        row.setFocusable(true);
+        applyFocus(row, 0xFF172435, 0xFF243A58, 18);
+        row.setOnClickListener(v -> selectServer(preset));
+
+        boolean current = getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS").equals(preset.name);
+        TextView radio = text(current ? "◉" : "○", 31, true, current ? 0xFF7AB8F5 : 0xFF7B8DA7);
+        radio.setGravity(Gravity.CENTER);
+        row.addView(radio, new LinearLayout.LayoutParams(dp(56), dp(56)));
+
+        LinearLayout labels = vertical();
+        labels.setPadding(dp(10), 0, 0, 0);
+        labels.addView(text(preset.name, 20, true, 0xFFFFFFFF));
+        labels.addView(text(preset.kind + "  •  " + preset.dns1 + " / " + preset.dns2, 14, false, 0xFF8FA3BD));
+        row.addView(labels, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView arrow = text("⌄", 24, true, 0xFFB8C4D8);
+        arrow.setGravity(Gravity.CENTER);
+        row.addView(arrow, new LinearLayout.LayoutParams(dp(44), dp(56)));
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(8));
+        row.setLayoutParams(lp);
+        return row;
+    }
+
+    private void renderLogsOnly() {
+        if (groupedLogsLayout == null) return;
+        groupedLogsLayout.removeAllViews();
+        Map<String, List<String>> grouped = DebugLog.readGrouped(this);
+        if (grouped.isEmpty()) {
+            LinearLayout empty = card(0xFF101A29, 0xFF303D51);
+            empty.addView(text(getString(R.string.log_empty), 16, false, 0xFFFFFFFF));
+            groupedLogsLayout.addView(empty, matchWrap());
+            return;
+        }
+
+        for (Map.Entry<String, List<String>> entry : grouped.entrySet()) {
+            LinearLayout groupCard = card(0xFF101A29, 0xFF303D51);
+            String title = displayGroupName(entry.getKey());
+            groupCard.addView(text(title, 20, true, 0xFFFFFFFF));
+            TextView body = text(join(entry.getValue()), 13, false, 0xFFE8EEF8);
+            body.setTypeface(Typeface.MONOSPACE);
+            body.setPadding(dp(12), dp(10), dp(12), dp(10));
+            body.setBackground(makeSolid(0xFF08111D, 14, 0xFF263143, 1));
+            groupCard.addView(body, matchWrap());
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMargins(0, 0, 0, dp(12));
+            groupedLogsLayout.addView(groupCard, lp);
+        }
     }
 
     private void startDnsVpn() {
-        saveSettings();
-        if (!allAppsCheckbox.isChecked() && selectedCount() == 0) {
-            toast("Najpierw zaznacz aplikacje albo włącz tryb: wszystkie aplikacje");
-            DebugLog.log(this, "Start zablokowany: brak wybranych aplikacji");
-            refreshDebugPanel();
+        if (!validateDns(getPrefs().getString(DnsVpnService.PREF_DNS_1, "94.140.14.14")) || !validateDns(getPrefs().getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"))) {
+            toast(getString(R.string.invalid_dns));
             return;
         }
-
-        if (!looksLikeIpv4(cleanDns(dns1Input.getText().toString(), "")) || !looksLikeIpv4(cleanDns(dns2Input.getText().toString(), ""))) {
-            toast("Wpisz DNS IPv4, np. 94.140.14.14");
-            DebugLog.log(this, "Start zablokowany: DNS wygląda niepoprawnie");
-            refreshDebugPanel();
+        if (!isAllAppsMode() && getSelectedApps().isEmpty()) {
+            toast(getString(R.string.no_selected_apps));
             return;
         }
-
         Intent prepareIntent = VpnService.prepare(this);
         if (prepareIntent != null) {
-            DebugLog.log(this, "Android wymaga zgody na VPN");
+            DebugLog.log(this, "SYSTEM", getString(R.string.vpn_permission_needed));
             startActivityForResult(prepareIntent, REQ_VPN);
         } else {
             startServiceNow();
@@ -351,393 +597,397 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, DnsVpnService.class);
         intent.setAction(DnsVpnService.ACTION_STOP);
         startService(intent);
-        toast("DNS zatrzymywany");
-        refreshDebugPanel();
+        toast(getString(R.string.stopping));
+        refreshStatusViews();
     }
 
     private void startServiceNow() {
         Intent intent = new Intent(this, DnsVpnService.class);
         intent.setAction(DnsVpnService.ACTION_START);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent);
-        } else {
-            startService(intent);
-        }
-        toast("Łączenie DNS...");
-        refreshDebugPanel();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent); else startService(intent);
+        toast(getString(R.string.connecting));
+        refreshStatusViews();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_VPN && resultCode == RESULT_OK) {
-            DebugLog.log(this, "Zgoda VPN zaakceptowana");
+            DebugLog.log(this, "SYSTEM", "VPN permission accepted");
             startServiceNow();
         } else if (requestCode == REQ_VPN) {
-            DebugLog.log(this, "Zgoda VPN odrzucona");
-            toast("Bez zgody VPN aplikacja nie zmieni DNS");
-            refreshDebugPanel();
+            DebugLog.log(this, "SYSTEM", "VPN permission denied");
+            toast(getString(R.string.vpn_permission_denied));
         }
     }
 
-    private void loadSettings() {
-        SharedPreferences prefs = getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE);
-        dns1Input.setText(prefs.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
-        dns2Input.setText(prefs.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
-        allAppsCheckbox.setChecked(prefs.getBoolean(DnsVpnService.PREF_ALL_APPS, true));
-        updateAppListEnabled();
+    private void refreshStatusViews() {
+        SharedPreferences p = getPrefs();
+        boolean running = p.getBoolean(DnsVpnService.PREF_RUNNING, false);
+        if (statusBadge != null) {
+            statusBadge.setText(running ? getString(R.string.active) : getString(R.string.inactive));
+            statusBadge.setBackground(makeSolid(running ? 0xFF1D8B5A : 0xFF7D3240, 22, running ? 0xFF8BFFD0 : 0xFFFF9DA8, 2));
+        }
+        String stats = buildStatsText();
+        if (homeStatsText != null) homeStatsText.setText(stats);
+        if (logStatsText != null) logStatsText.setText(stats);
     }
 
-    private void saveSettings() {
-        if (dns1Input == null || dns2Input == null || allAppsCheckbox == null) return;
-        Set<String> selected = new LinkedHashSet<>();
-        for (AppRow row : appRows) {
-            if (row.checkBox.isChecked()) {
-                selected.add(row.packageName);
-            }
-        }
+    private String buildStatsText() {
+        SharedPreferences p = getPrefs();
+        boolean running = p.getBoolean(DnsVpnService.PREF_RUNNING, false);
+        long started = p.getLong(DnsVpnService.PREF_STARTED_AT, 0);
+        String uptime = started <= 0 ? "-" : humanTime(System.currentTimeMillis() - started);
+        return "status: " + (running ? "ACTIVE" : "INACTIVE") + "\n" +
+                "server: " + p.getString(DnsVpnService.PREF_ACTIVE_SERVER, p.getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS")) + "\n" +
+                "dns: " + p.getString(DnsVpnService.PREF_ACTIVE_DNS, p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14") + ", " + p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15")) + "\n" +
+                "mode: " + (isAllAppsMode() ? getString(R.string.all_apps) : getString(R.string.selected_apps_count, getSelectedApps().size())) + "\n" +
+                "uptime: " + uptime + "\n" +
+                "packets: " + p.getLong(DnsVpnService.PREF_PACKETS, 0) + "\n" +
+                "queries: " + p.getLong(DnsVpnService.PREF_DNS_QUERIES, 0) + " / responses: " + p.getLong(DnsVpnService.PREF_DNS_RESPONSES, 0) + " / failures: " + p.getLong(DnsVpnService.PREF_DNS_FAILURES, 0) + "\n" +
+                "dropped: " + p.getLong(DnsVpnService.PREF_DNS_DROPPED, 0) + "\n" +
+                "last domain: " + p.getString(DnsVpnService.PREF_LAST_DOMAIN, "-") + "\n" +
+                "last error: " + p.getString(DnsVpnService.PREF_LAST_ERROR, "");
+    }
 
-        getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE)
-                .edit()
-                .putString(DnsVpnService.PREF_DNS_1, cleanDns(dns1Input.getText().toString(), "94.140.14.14"))
-                .putString(DnsVpnService.PREF_DNS_2, cleanDns(dns2Input.getText().toString(), "94.140.15.15"))
-                .putBoolean(DnsVpnService.PREF_ALL_APPS, allAppsCheckbox.isChecked())
-                .putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected)
-                .apply();
-        updateCountersOnly();
+    private void initPresets() {
+        presets.clear();
+        presets.add(new ServerPreset("AdGuard DNS", "Public", "94.140.14.14", "94.140.15.15"));
+        presets.add(new ServerPreset("AdGuard DNS + Family Protection", "Public", "94.140.14.15", "94.140.15.16"));
+        presets.add(new ServerPreset("Cloudflare", "Public", "1.1.1.1", "1.0.0.1"));
+        presets.add(new ServerPreset("Google DNS", "Public", "8.8.8.8", "8.8.4.4"));
+        presets.add(new ServerPreset("Quad9", "Security", "9.9.9.9", "149.112.112.112"));
+        presets.add(new ServerPreset("CleanBrowsing", "Security", "185.228.168.9", "185.228.169.9"));
+        presets.add(new ServerPreset("CleanBrowsing + Family Protection", "Family", "185.228.168.168", "185.228.169.168"));
+        presets.add(new ServerPreset("OpenDNS", "Public", "208.67.222.222", "208.67.220.220"));
+        presets.add(new ServerPreset("CONTROL D + Ads & Tracking", "Public", "76.76.2.2", "76.76.10.2"));
+        presets.add(new ServerPreset("AlternateDNS", "Public", "76.76.19.19", "76.223.122.150"));
+    }
+
+    private void ensureDefaultSettings() {
+        SharedPreferences p = getPrefs();
+        if (!p.contains(DnsVpnService.PREF_DNS_1)) {
+            p.edit()
+                    .putString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS")
+                    .putString(DnsVpnService.PREF_DNS_1, "94.140.14.14")
+                    .putString(DnsVpnService.PREF_DNS_2, "94.140.15.15")
+                    .putBoolean(DnsVpnService.PREF_ALL_APPS, true)
+                    .putBoolean(DnsVpnService.PREF_BATTERY_SAVER, true)
+                    .apply();
+        }
     }
 
     private void loadApps() {
-        appListLayout.removeAllViews();
-        appRows.clear();
-
-        SharedPreferences prefs = getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE);
-        Set<String> selected = prefs.getStringSet(DnsVpnService.PREF_SELECTED_APPS, new LinkedHashSet<String>());
-
+        apps.clear();
+        appLabels.clear();
         PackageManager pm = getPackageManager();
-        List<ApplicationInfo> apps = pm.getInstalledApplications(0);
-        List<AppItem> launchable = new ArrayList<>();
-
-        for (ApplicationInfo info : apps) {
+        List<ApplicationInfo> installed = pm.getInstalledApplications(0);
+        for (ApplicationInfo info : installed) {
             if (info == null || info.packageName == null) continue;
             if (info.packageName.equals(getPackageName())) continue;
-            if (pm.getLaunchIntentForPackage(info.packageName) == null) continue;
-
-            String label;
-            try {
-                label = String.valueOf(pm.getApplicationLabel(info));
-            } catch (Exception e) {
-                label = info.packageName;
+            Intent launch = pm.getLaunchIntentForPackage(info.packageName);
+            if (launch == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                launch = pm.getLeanbackLaunchIntentForPackage(info.packageName);
             }
-            launchable.add(new AppItem(label, info.packageName));
+            if (launch == null) continue;
+            String label;
+            try { label = String.valueOf(pm.getApplicationLabel(info)); } catch (Exception e) { label = info.packageName; }
+            Drawable icon = null;
+            try { icon = pm.getApplicationIcon(info.packageName); } catch (Exception ignored) {}
+            apps.add(new AppItem(label, info.packageName, icon));
+            appLabels.put(info.packageName, label);
         }
+        Collections.sort(apps, Comparator.comparing(a -> a.label.toLowerCase(Locale.US)));
+    }
 
-        Collections.sort(launchable, Comparator.comparing(item -> item.label.toLowerCase(Locale.US)));
+    private void selectServer(ServerPreset preset) {
+        getPrefs().edit()
+                .putString(DnsVpnService.PREF_SERVER_NAME, preset.name)
+                .putString(DnsVpnService.PREF_DNS_1, preset.dns1)
+                .putString(DnsVpnService.PREF_DNS_2, preset.dns2)
+                .apply();
+        DebugLog.log(this, "SYSTEM", "Server selected: " + preset.name);
+        toast(getString(R.string.server_selected));
+        showScreen(SCREEN_SERVERS);
+    }
 
-        if (launchable.isEmpty()) {
-            TextView empty = text("Nie znaleziono aplikacji do wyboru.", 16, false, 0xFFE5E7EB);
-            empty.setPadding(0, dp(12), 0, dp(12));
-            appListLayout.addView(empty);
-            updateCountersOnly();
+    private void saveCustomServer() {
+        String dns1 = customDns1 == null ? "" : customDns1.getText().toString().trim();
+        String dns2 = customDns2 == null ? "" : customDns2.getText().toString().trim();
+        if (!validateDns(dns1) || !validateDns(dns2)) {
+            toast(getString(R.string.invalid_dns));
             return;
         }
-
-        for (AppItem item : launchable) {
-            LinearLayout rowView = new LinearLayout(this);
-            rowView.setOrientation(LinearLayout.VERTICAL);
-            rowView.setPadding(dp(12), dp(8), dp(12), dp(8));
-            rowView.setBackground(makeSolid(0xFF162235, 12, 0xFF29384F));
-
-            CheckBox checkBox = new CheckBox(this);
-            checkBox.setText(item.label + "\n" + item.packageName);
-            checkBox.setTextColor(Color.WHITE);
-            checkBox.setTextSize(17);
-            checkBox.setFocusable(true);
-            checkBox.setPadding(0, dp(5), 0, dp(5));
-            checkBox.setChecked(selected != null && selected.contains(item.packageName));
-            checkBox.setOnCheckedChangeListener((CompoundButton buttonView, boolean isChecked) -> saveSettings());
-
-            rowView.addView(checkBox, matchWrap());
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-            params.setMargins(0, 0, 0, dp(8));
-            appListLayout.addView(rowView, params);
-            appRows.add(new AppRow(item.label, item.packageName, rowView, checkBox));
-        }
-
-        updateAppListEnabled();
-        updateCountersOnly();
+        getPrefs().edit()
+                .putString(DnsVpnService.PREF_SERVER_NAME, "Custom DNS")
+                .putString(DnsVpnService.PREF_DNS_1, dns1)
+                .putString(DnsVpnService.PREF_DNS_2, dns2)
+                .apply();
+        DebugLog.log(this, "SYSTEM", "Custom server saved: " + dns1 + ", " + dns2);
+        toast(getString(R.string.server_saved));
+        showScreen(SCREEN_SERVERS);
     }
 
-    private void filterApps(String query) {
-        String q = query == null ? "" : query.trim().toLowerCase(Locale.US);
-        int visible = 0;
-        for (AppRow row : appRows) {
-            boolean show = q.isEmpty()
-                    || row.label.toLowerCase(Locale.US).contains(q)
-                    || row.packageName.toLowerCase(Locale.US).contains(q);
-            row.rowView.setVisibility(show ? View.VISIBLE : View.GONE);
-            if (show) visible++;
-        }
-        updateCountersOnly(visible);
+    private void toggleAppSelected(String pkg) {
+        Set<String> selected = getSelectedApps();
+        if (selected.contains(pkg)) selected.remove(pkg); else selected.add(pkg);
+        getPrefs().edit().putBoolean(DnsVpnService.PREF_ALL_APPS, false).putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected).apply();
+        renderAppList();
     }
 
-    private void setVisibleRowsChecked(boolean checked) {
-        for (AppRow row : appRows) {
-            if (row.rowView.getVisibility() == View.VISIBLE) {
-                row.checkBox.setChecked(checked);
+    private void toggleAppLogging(String pkg) {
+        Set<String> logging = getLoggingApps();
+        if (logging.contains(pkg)) logging.remove(pkg); else logging.add(pkg);
+        getPrefs().edit().putStringSet(DnsVpnService.PREF_LOGGING_APPS, logging).apply();
+        renderAppList();
+    }
+
+    private void setVisibleSelected(boolean checked) {
+        Set<String> selected = getSelectedApps();
+        String q = appFilter == null ? "" : appFilter.trim().toLowerCase(Locale.US);
+        for (AppItem item : apps) {
+            boolean show = q.isEmpty() || item.label.toLowerCase(Locale.US).contains(q) || item.packageName.toLowerCase(Locale.US).contains(q);
+            if (show) {
+                if (checked) selected.add(item.packageName); else selected.remove(item.packageName);
             }
         }
-        saveSettings();
-        updateCountersOnly();
+        getPrefs().edit().putBoolean(DnsVpnService.PREF_ALL_APPS, false).putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected).apply();
+        renderAppList();
     }
 
-    private void setAllRowsChecked(boolean checked) {
-        for (AppRow row : appRows) {
-            row.checkBox.setChecked(checked);
-        }
-        saveSettings();
-        updateCountersOnly();
+    private void setAllSelected(boolean checked) {
+        Set<String> selected = new LinkedHashSet<>();
+        if (checked) for (AppItem item : apps) selected.add(item.packageName);
+        getPrefs().edit().putBoolean(DnsVpnService.PREF_ALL_APPS, false).putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected).apply();
+        renderAppList();
     }
 
-    private void updateAppListEnabled() {
-        boolean enabled = allAppsCheckbox == null || !allAppsCheckbox.isChecked();
-        for (AppRow row : appRows) {
-            row.checkBox.setEnabled(enabled);
-            row.rowView.setAlpha(enabled ? 1.0f : 0.45f);
-        }
-        if (searchInput != null) searchInput.setEnabled(enabled);
-        updateCountersOnly();
+    private void setAllAppsMode(boolean all) {
+        getPrefs().edit().putBoolean(DnsVpnService.PREF_ALL_APPS, all).apply();
     }
 
-    private void refreshDebugPanel() {
-        SharedPreferences prefs = getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE);
-        boolean running = prefs.getBoolean(DnsVpnService.PREF_RUNNING, false);
-        String lastError = prefs.getString(DnsVpnService.PREF_LAST_ERROR, "");
-        String lastEvent = prefs.getString(DnsVpnService.PREF_LAST_EVENT, "");
-        String activeDns = prefs.getString(DnsVpnService.PREF_ACTIVE_DNS, dns1Input.getText() + ", " + dns2Input.getText());
-        String activeMode = prefs.getString(DnsVpnService.PREF_ACTIVE_MODE, allAppsCheckbox.isChecked() ? "Wszystkie aplikacje" : "Wybrane aplikacje: " + selectedCount());
-        String lastDomain = prefs.getString(DnsVpnService.PREF_LAST_DOMAIN, "-");
-        long startedAt = prefs.getLong(DnsVpnService.PREF_STARTED_AT, 0);
-        long packets = prefs.getLong(DnsVpnService.PREF_PACKETS, 0);
-        long queries = prefs.getLong(DnsVpnService.PREF_DNS_QUERIES, 0);
-        long responses = prefs.getLong(DnsVpnService.PREF_DNS_RESPONSES, 0);
-        long failures = prefs.getLong(DnsVpnService.PREF_DNS_FAILURES, 0);
+    private boolean isAllAppsMode() { return getPrefs().getBoolean(DnsVpnService.PREF_ALL_APPS, true); }
 
-        statusBadge.setText(running ? "ONLINE" : "OFFLINE");
-        statusBadge.setBackground(makeSolid(running ? 0xFF00A86B : 0xFF374151, 28, running ? 0xFF34D399 : 0xFF6B7280));
-
-        String started = startedAt == 0 ? "-" : new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date(startedAt));
-        StringBuilder stats = new StringBuilder();
-        stats.append("running       : ").append(running ? "YES" : "NO").append('\n');
-        stats.append("event         : ").append(emptyDash(lastEvent)).append('\n');
-        stats.append("mode          : ").append(activeMode).append('\n');
-        stats.append("dns upstream  : ").append(activeDns).append('\n');
-        stats.append("started at    : ").append(started).append('\n');
-        stats.append("packets       : ").append(packets).append('\n');
-        stats.append("dns queries   : ").append(queries).append('\n');
-        stats.append("dns responses : ").append(responses).append('\n');
-        stats.append("dns failures  : ").append(failures).append('\n');
-        stats.append("last domain   : ").append(emptyDash(lastDomain)).append('\n');
-        stats.append("last error    : ").append(emptyDash(lastError));
-        debugStatsText.setText(stats.toString());
-
-        String log = DebugLog.read(this);
-        if (log.length() > 5000) {
-            log = log.substring(log.length() - 5000);
-        }
-        debugLogText.setText(log.trim().isEmpty() ? "Brak logów." : log);
-        updateCountersOnly();
+    private Set<String> getSelectedApps() {
+        return new LinkedHashSet<>(getPrefs().getStringSet(DnsVpnService.PREF_SELECTED_APPS, new LinkedHashSet<String>()));
     }
 
-    private void updateCountersOnly() {
-        int visible = 0;
-        for (AppRow row : appRows) {
-            if (row.rowView.getVisibility() == View.VISIBLE) visible++;
-        }
-        updateCountersOnly(visible);
+    private Set<String> getLoggingApps() {
+        return new LinkedHashSet<>(getPrefs().getStringSet(DnsVpnService.PREF_LOGGING_APPS, new LinkedHashSet<String>()));
     }
 
-    private void updateCountersOnly(int visible) {
-        if (appCounterText == null) return;
-        int selected = selectedCount();
-        String mode = allAppsCheckbox != null && allAppsCheckbox.isChecked() ? "tryb: wszystkie aplikacje" : "tryb: wybrane aplikacje";
-        appCounterText.setText("Aplikacje: " + appRows.size() + " • widoczne: " + visible + " • zaznaczone: " + selected + " • " + mode);
+    private SharedPreferences getPrefs() { return getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE); }
+
+    private String displayGroupName(String key) {
+        if (key == null) return "SYSTEM";
+        if (key.equals("ALL_APPS")) return getString(R.string.global_log_group);
+        if (key.startsWith("SELECTED_APPS_")) return getString(R.string.multi_app_log_group) + " (" + key.replace("SELECTED_APPS_", "") + ")";
+        String label = appLabels.get(key);
+        return label == null ? key : label;
     }
 
     private void copyLogToClipboard() {
-        String all = debugStatsText.getText().toString() + "\n\n" + DebugLog.read(this);
         ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
         if (clipboard != null) {
-            clipboard.setPrimaryClip(ClipData.newPlainText("AdGuard TV DNS debug", all));
-            toast("Skopiowano debug do schowka");
+            clipboard.setPrimaryClip(ClipData.newPlainText("AdGuard TV DNS Pro logs", DebugLog.read(this)));
+            toast(getString(R.string.copied));
         }
     }
 
-    private int selectedCount() {
-        int count = 0;
-        for (AppRow row : appRows) {
-            if (row.checkBox.isChecked()) count++;
-        }
-        return count;
+    private void updateNavSelected() {
+        styleNav(tabHome, currentScreen == SCREEN_HOME);
+        styleNav(tabApps, currentScreen == SCREEN_APPS);
+        styleNav(tabServers, currentScreen == SCREEN_SERVERS);
+        styleNav(tabLogs, currentScreen == SCREEN_LOGS);
     }
 
-    private boolean looksLikeIpv4(String value) {
-        if (value == null) return false;
-        String[] parts = value.trim().split("\\.");
+    private boolean validateDns(String dns) {
+        if (dns == null) return false;
+        String[] parts = dns.trim().split("\\.");
         if (parts.length != 4) return false;
-        for (String part : parts) {
-            try {
-                int v = Integer.parseInt(part);
-                if (v < 0 || v > 255) return false;
-            } catch (Exception e) {
-                return false;
+        try {
+            for (String part : parts) {
+                int n = Integer.parseInt(part);
+                if (n < 0 || n > 255) return false;
             }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-        return true;
     }
 
-    private String cleanDns(String value, String fallback) {
-        String trimmed = value == null ? "" : value.trim();
-        return trimmed.isEmpty() ? fallback : trimmed;
+    private ScrollView scroll(View child) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.addView(child, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return scroll;
     }
 
-    private String emptyDash(String value) {
-        return value == null || value.trim().isEmpty() ? "-" : value;
+    private LinearLayout screenRoot() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(22), dp(18), dp(22), dp(22));
+        return root;
     }
 
-    private LinearLayout card(int color, int stroke) {
+    private LinearLayout card(int color, int border) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(22), dp(20), dp(22), dp(22));
-        card.setBackground(makeSolid(color, 18, stroke));
-        card.setFocusable(false);
+        card.setPadding(dp(18), dp(16), dp(18), dp(16));
+        card.setBackground(makeSolid(color, 22, border, 1));
         return card;
     }
 
-    private TextView label(String value) {
-        TextView label = text(value, 15, true, 0xFFE5E7EB);
-        label.setPadding(0, 0, 0, dp(5));
-        return label;
-    }
-
-    private EditText editText(String hint) {
-        EditText editText = new EditText(this);
-        editText.setTextColor(Color.WHITE);
-        editText.setHintTextColor(0xFF8EA0B8);
-        editText.setHint(hint);
-        editText.setTextSize(18);
-        editText.setSingleLine(true);
-        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        editText.setPadding(dp(14), 0, dp(14), 0);
-        editText.setFocusable(true);
-        editText.setSelectAllOnFocus(true);
-        editText.setBackground(makeSolid(0xFF07111F, 14, 0xFF334155));
-        return editText;
-    }
-
-    private Button primaryButton(String value) {
-        Button button = baseButton(value);
-        button.setBackground(makeSolid(0xFF00A86B, 14, 0xFF34D399));
-        button.setTextColor(Color.WHITE);
-        return button;
-    }
-
-    private Button dangerButton(String value) {
-        Button button = baseButton(value);
-        button.setBackground(makeSolid(0xFFB42318, 14, 0xFFF97066));
-        button.setTextColor(Color.WHITE);
-        return button;
-    }
-
-    private Button neutralButton(String value) {
-        Button button = baseButton(value);
-        button.setBackground(makeSolid(0xFF24324A, 14, 0xFF475569));
-        button.setTextColor(Color.WHITE);
-        return button;
-    }
-
-    private Button baseButton(String value) {
-        Button button = new Button(this);
-        button.setText(value);
-        button.setTextSize(17);
-        button.setAllCaps(false);
-        button.setFocusable(true);
-        button.setGravity(Gravity.CENTER);
-        button.setPadding(dp(8), 0, dp(8), 0);
-        return button;
-    }
-
     private TextView text(String value, int sp, boolean bold, int color) {
-        TextView textView = new TextView(this);
-        textView.setText(value);
-        textView.setTextColor(color);
-        textView.setTextSize(sp);
-        if (bold) textView.setTypeface(textView.getTypeface(), Typeface.BOLD);
-        return textView;
+        TextView t = new TextView(this);
+        t.setText(value == null ? "" : value);
+        t.setTextSize(sp);
+        t.setTextColor(color);
+        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        t.setIncludeFontPadding(true);
+        return t;
     }
 
-    private View spacer(int widthDp, int heightDp) {
-        View view = new View(this);
-        view.setLayoutParams(new LinearLayout.LayoutParams(dp(widthDp), dp(heightDp)));
-        return view;
+    private TextView label(String value) {
+        TextView t = text(value, 13, true, 0xFF8FA3BD);
+        t.setPadding(0, 0, 0, dp(5));
+        return t;
     }
 
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
+    private EditText editText(String hintOrValue) {
+        EditText e = new EditText(this);
+        e.setTextColor(Color.WHITE);
+        e.setHintTextColor(0xFF7D8EA8);
+        e.setTextSize(16);
+        e.setSingleLine(true);
+        e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        e.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        if (hintOrValue != null && (hintOrValue.contains(".") && validateMaybeIp(hintOrValue))) {
+            e.setText(hintOrValue);
+        } else {
+            e.setHint(hintOrValue);
+        }
+        e.setPadding(dp(14), 0, dp(14), 0);
+        e.setSelectAllOnFocus(false);
+        e.setFocusable(true);
+        e.setFocusableInTouchMode(true);
+        e.setBackground(makeSolid(0xFF08111D, 14, 0xFF476D9B, 2));
+        e.setOnClickListener(v -> showKeyboard(e));
+        return e;
     }
 
-    private GradientDrawable makeSolid(int color, int radiusDp, int strokeColor) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(color);
-        drawable.setCornerRadius(dp(radiusDp));
-        drawable.setStroke(dp(1), strokeColor);
-        return drawable;
+    private boolean validateMaybeIp(String value) { return value.matches("[0-9.]+") || value.length() < 16; }
+
+    private Button navButton(String value) {
+        Button b = new Button(this);
+        b.setText(value);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(13);
+        b.setGravity(Gravity.CENTER);
+        b.setAllCaps(false);
+        b.setFocusable(true);
+        return b;
     }
 
-    private GradientDrawable makeBackground(int startColor, int endColor, int radiusDp) {
-        GradientDrawable drawable = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{startColor, endColor}
-        );
-        drawable.setCornerRadius(dp(radiusDp));
-        return drawable;
+    private Button bigIconButton(String value) { return baseButton(value, 0xFF172435, 0xFF253C5D, 0xFFFFFFFF, 18); }
+    private Button primaryButton(String value) { return baseButton(value, 0xFF2E7DD1, 0xFF3C95F4, 0xFFFFFFFF, 16); }
+    private Button dangerButton(String value) { return baseButton(value, 0xFF813443, 0xFFB64254, 0xFFFFFFFF, 16); }
+    private Button neutralButton(String value) { return baseButton(value, 0xFF253348, 0xFF334A6D, 0xFFFFFFFF, 15); }
+    private Button miniButton(String value) { return baseButton(value, 0xFF263548, 0xFF36567E, 0xFFFFFFFF, 20); }
+    private Button segmentedButton(String value, boolean on) { return baseButton(value, on ? 0xFF2E7DD1 : 0xFF303A49, on ? 0xFF3C95F4 : 0xFF48576A, 0xFFFFFFFF, 17); }
+    private Button modeButton(String value, boolean selected) { return baseButton(value, selected ? 0xFF2E7DD1 : 0xFF253348, selected ? 0xFF8DCAFF : 0xFF334A6D, 0xFFFFFFFF, 15); }
+    private Button smallStateButton(String value, boolean selected) { return baseButton(value, selected ? 0xFF1D8B5A : 0xFF314054, selected ? 0xFF8BFFD0 : 0xFF6D7C92, 0xFFFFFFFF, 12); }
+
+    private Button baseButton(String value, int normal, int focus, int textColor, int sp) {
+        Button b = new Button(this);
+        b.setText(value);
+        b.setTextColor(textColor);
+        b.setTextSize(sp);
+        b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        b.setAllCaps(false);
+        b.setGravity(Gravity.CENTER);
+        b.setPadding(dp(8), 0, dp(8), 0);
+        b.setFocusable(true);
+        applyFocus(b, normal, focus, 18);
+        return b;
     }
 
-    private void toast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    private void styleNav(Button b, boolean selected) {
+        if (b == null) return;
+        b.setBackground(makeSolid(selected ? 0xFF2E7DD1 : 0xFF1D2A3A, 18, selected ? 0xFF8DCAFF : 0xFF2B3A4F, selected ? 2 : 1));
     }
 
-    private int dp(int value) {
-        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    private void applyFocus(View view, int normal, int focus, int radius) {
+        view.setBackground(makeSolid(normal, radius, 0xFF33465F, 1));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) view.setDefaultFocusHighlightEnabled(false);
+        view.setOnFocusChangeListener((v, hasFocus) -> {
+            v.setBackground(makeSolid(hasFocus ? focus : normal, radius, hasFocus ? 0xFF9FD2FF : 0xFF33465F, hasFocus ? 4 : 1));
+            v.setScaleX(hasFocus ? 1.025f : 1f);
+            v.setScaleY(hasFocus ? 1.025f : 1f);
+        });
+    }
+
+    private GradientDrawable makeSolid(int color, int radius, int border, int stroke) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(color);
+        g.setCornerRadius(dp(radius));
+        if (stroke > 0) g.setStroke(dp(stroke), border);
+        return g;
+    }
+
+    private GradientDrawable makeGradient(int top, int bottom) {
+        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{top, bottom});
+        return g;
+    }
+
+    private LinearLayout vertical() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); return l; }
+    private LinearLayout.LayoutParams matchWrap() { return new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); }
+    private Space gap(int w, int h) { Space s = new Space(this); s.setLayoutParams(new LinearLayout.LayoutParams(dp(w), dp(h))); return s; }
+    private Space space(int w, int h) { return gap(w, h); }
+    private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
+
+    private void showKeyboard(EditText editText) {
+        editText.postDelayed(() -> {
+            editText.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+        }, 120);
+    }
+
+    private void hideKeyboard(TextView view) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    private void toast(String msg) { Toast.makeText(this, msg, Toast.LENGTH_SHORT).show(); }
+
+    private String humanTime(long millis) {
+        long sec = millis / 1000;
+        long h = sec / 3600;
+        long m = (sec % 3600) / 60;
+        long s = sec % 60;
+        if (h > 0) return h + "h " + m + "m";
+        if (m > 0) return m + "m " + s + "s";
+        return s + "s";
+    }
+
+    private String join(List<String> lines) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : lines) sb.append(s).append('\n');
+        return sb.toString();
     }
 
     private static class AppItem {
         final String label;
         final String packageName;
-
-        AppItem(String label, String packageName) {
-            this.label = label;
-            this.packageName = packageName;
-        }
+        final Drawable icon;
+        AppItem(String label, String packageName, Drawable icon) { this.label = label; this.packageName = packageName; this.icon = icon; }
     }
 
-    private static class AppRow {
-        final String label;
-        final String packageName;
-        final View rowView;
-        final CheckBox checkBox;
-
-        AppRow(String label, String packageName, View rowView, CheckBox checkBox) {
-            this.label = label;
-            this.packageName = packageName;
-            this.rowView = rowView;
-            this.checkBox = checkBox;
-        }
+    private static class ServerPreset {
+        final String name;
+        final String kind;
+        final String dns1;
+        final String dns2;
+        ServerPreset(String name, String kind, String dns1, String dns2) { this.name = name; this.kind = kind; this.dns1 = dns1; this.dns2 = dns2; }
     }
 }

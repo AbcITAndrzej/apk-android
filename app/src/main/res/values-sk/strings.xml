@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">AdGuard TV DNS Pro</string>
+    <string name="home">Domov</string>
+    <string name="apps">Aplikácie</string>
+    <string name="servers">Servery</string>
+    <string name="logs">Logy</string>
+    <string name="connect">PRIPOJIŤ</string>
+    <string name="stop">STOP</string>
+    <string name="on">ZAP</string>
+    <string name="off">VYP</string>
+    <string name="all_apps">Všetky aplikácie</string>
+    <string name="selected_apps">Vybrané aplikácie</string>
+    <string name="search_apps">Hľadať aplikácie…</string>
+    <string name="active">AKTÍVNE</string>
+    <string name="inactive">NEAKTÍVNE</string>
+</resources>

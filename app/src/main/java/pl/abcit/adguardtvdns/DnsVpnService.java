@@ -18,8 +18,9 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class DnsVpnService extends VpnService {
@@ -29,19 +30,25 @@ public class DnsVpnService extends VpnService {
     public static final String PREFS = "dns_settings";
     public static final String PREF_DNS_1 = "dns_1";
     public static final String PREF_DNS_2 = "dns_2";
+    public static final String PREF_SERVER_NAME = "server_name";
     public static final String PREF_ALL_APPS = "all_apps";
     public static final String PREF_SELECTED_APPS = "selected_apps";
+    public static final String PREF_LOGGING_APPS = "logging_apps";
+    public static final String PREF_BATTERY_SAVER = "battery_saver";
 
     public static final String PREF_RUNNING = "running";
     public static final String PREF_LAST_ERROR = "last_error";
     public static final String PREF_LAST_EVENT = "last_event";
     public static final String PREF_ACTIVE_DNS = "active_dns";
+    public static final String PREF_ACTIVE_SERVER = "active_server";
     public static final String PREF_ACTIVE_MODE = "active_mode";
+    public static final String PREF_ACTIVE_GROUP = "active_group";
     public static final String PREF_STARTED_AT = "started_at";
     public static final String PREF_PACKETS = "packets";
     public static final String PREF_DNS_QUERIES = "dns_queries";
     public static final String PREF_DNS_RESPONSES = "dns_responses";
     public static final String PREF_DNS_FAILURES = "dns_failures";
+    public static final String PREF_DNS_DROPPED = "dns_dropped";
     public static final String PREF_LAST_DOMAIN = "last_domain";
 
     private static final String CHANNEL_ID = "dns_vpn_status";
@@ -51,57 +58,71 @@ public class DnsVpnService extends VpnService {
     private final AtomicLong dnsQueries = new AtomicLong();
     private final AtomicLong dnsResponses = new AtomicLong();
     private final AtomicLong dnsFailures = new AtomicLong();
+    private final AtomicLong droppedQueries = new AtomicLong();
 
     private volatile boolean running;
     private volatile long lastStatsWriteMs;
+    private volatile long lastDomainWriteMs;
+    private volatile String logGroup = "SYSTEM";
+    private volatile boolean domainLoggingEnabled;
+
     private ParcelFileDescriptor vpnInterface;
     private Thread vpnThread;
     private FileOutputStream tunOutput;
-    private ExecutorService executor;
+    private ThreadPoolExecutor executor;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? ACTION_START : intent.getAction();
         if (ACTION_STOP.equals(action)) {
-            DebugLog.log(this, "STOP kliknięty");
-            stopVpn("Zatrzymane ręcznie");
+            DebugLog.log(this, "SYSTEM", "STOP requested");
+            stopVpn("Stopped manually");
             stopSelf();
             return START_NOT_STICKY;
         }
 
-        startForeground(NOTIFICATION_ID, buildNotification("Łączenie..."));
-        DebugLog.log(this, "START kliknięty");
+        startForeground(NOTIFICATION_ID, buildNotification("Connecting…"));
+        DebugLog.log(this, "SYSTEM", "CONNECT requested");
         startVpn();
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        stopVpn("Usługa zamknięta");
+        stopVpn("Service destroyed");
         super.onDestroy();
     }
 
     private void startVpn() {
         if (running) {
-            DebugLog.log(this, "VPN już działa - pomijam drugi start");
+            DebugLog.log(this, "SYSTEM", "VPN already running - duplicate start ignored");
             return;
         }
 
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         boolean allApps = prefs.getBoolean(PREF_ALL_APPS, true);
+        boolean batterySaver = prefs.getBoolean(PREF_BATTERY_SAVER, true);
         Set<String> selectedApps = prefs.getStringSet(PREF_SELECTED_APPS, new LinkedHashSet<String>());
+        Set<String> loggingApps = prefs.getStringSet(PREF_LOGGING_APPS, new LinkedHashSet<String>());
         String[] upstreamServers = getUpstreamServers();
+        String serverName = prefs.getString(PREF_SERVER_NAME, "AdGuard DNS");
 
         packets.set(0);
         dnsQueries.set(0);
         dnsResponses.set(0);
         dnsFailures.set(0);
-        writeStatus(false, "", "Przygotowanie VPN");
+        droppedQueries.set(0);
+        lastStatsWriteMs = 0;
+        lastDomainWriteMs = 0;
+
+        logGroup = resolveLogGroup(allApps, selectedApps);
+        domainLoggingEnabled = shouldLogDomains(allApps, selectedApps, loggingApps);
+        writeStatus(false, "", "Preparing VPN");
 
         if (!allApps && (selectedApps == null || selectedApps.isEmpty())) {
-            String error = "Tryb wybranych aplikacji, ale lista jest pusta";
-            DebugLog.log(this, "BŁĄD: " + error);
-            writeStatus(false, error, "Start anulowany");
+            String error = "Selected-app mode is enabled but no app is selected";
+            DebugLog.log(this, "SYSTEM", "ERROR: " + error);
+            writeStatus(false, error, "Start cancelled");
             stopSelf();
             return;
         }
@@ -120,50 +141,60 @@ public class DnsVpnService extends VpnService {
                     try {
                         builder.addAllowedApplication(packageName);
                         allowed++;
-                        DebugLog.log(this, "Dołączona aplikacja: " + packageName);
+                        DebugLog.log(this, packageName, "App included in VPN scope");
                     } catch (Exception e) {
-                        DebugLog.log(this, "Pomijam aplikację " + packageName + ": " + e.getClass().getSimpleName());
+                        DebugLog.log(this, "SYSTEM", "Skipping app " + packageName + ": " + e.getClass().getSimpleName());
                     }
                 }
 
                 if (allowed == 0) {
-                    String error = "Nie udało się dołączyć żadnej wybranej aplikacji";
-                    DebugLog.log(this, "BŁĄD: " + error);
-                    writeStatus(false, error, "Start anulowany");
+                    String error = "No selected application could be added to VPN scope";
+                    DebugLog.log(this, "SYSTEM", "ERROR: " + error);
+                    writeStatus(false, error, "Start cancelled");
                     stopSelf();
                     return;
                 }
             }
 
-            DebugLog.log(this, "DNS upstream: " + upstreamServers[0] + ", " + upstreamServers[1]);
-            DebugLog.log(this, allApps ? "Tryb: wszystkie aplikacje" : "Tryb: wybrane aplikacje: " + allowed);
+            DebugLog.log(this, "SYSTEM", "Server: " + serverName + " / " + upstreamServers[0] + ", " + upstreamServers[1]);
+            DebugLog.log(this, "SYSTEM", allApps ? "Mode: all apps" : "Mode: selected apps: " + allowed);
+            DebugLog.log(this, "SYSTEM", "Advanced domain logging: " + (domainLoggingEnabled ? "ON" : "OFF") + ", battery saver: " + (batterySaver ? "ON" : "OFF"));
 
             vpnInterface = builder.establish();
             if (vpnInterface == null) {
-                String error = "Brak zgody Androida na VPN albo establish() zwróciło null";
-                DebugLog.log(this, "BŁĄD: " + error);
-                writeStatus(false, error, "VPN nie wystartował");
+                String error = "VPN permission missing or establish() returned null";
+                DebugLog.log(this, "SYSTEM", "ERROR: " + error);
+                writeStatus(false, error, "VPN did not start");
                 stopSelf();
                 return;
             }
 
             running = true;
-            executor = Executors.newFixedThreadPool(4);
-            writeStatus(true, "", "VPN aktywny");
-            DebugLog.log(this, "VPN aktywny. Wirtualny DNS: " + DnsPacketUtils.VIRTUAL_DNS);
-            updateNotification("DNS aktywny");
+            int coreWorkers = batterySaver ? 1 : 2;
+            int maxWorkers = batterySaver ? 2 : 4;
+            executor = new ThreadPoolExecutor(
+                    coreWorkers,
+                    maxWorkers,
+                    20L,
+                    TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<Runnable>(batterySaver ? 96 : 256),
+                    new ThreadPoolExecutor.DiscardPolicy()
+            );
+            writeStatus(true, "", "VPN active");
+            DebugLog.log(this, "SYSTEM", "VPN active. Virtual DNS: " + DnsPacketUtils.VIRTUAL_DNS);
+            updateNotification("DNS active: " + serverName);
 
-            vpnThread = new Thread(() -> vpnLoop(upstreamServers), "AdGuardTvDnsLoop");
+            vpnThread = new Thread(() -> vpnLoop(upstreamServers, batterySaver), "AdGuardTvDnsLoop");
             vpnThread.start();
         } catch (Exception e) {
             String error = e.getClass().getSimpleName() + ": " + safeMessage(e);
-            DebugLog.log(this, "BŁĄD startu VPN: " + error);
+            DebugLog.log(this, "SYSTEM", "VPN start error: " + error);
             stopVpn(error);
             stopSelf();
         }
     }
 
-    private void vpnLoop(String[] upstreamServers) {
+    private void vpnLoop(String[] upstreamServers, boolean batterySaver) {
         try (FileInputStream input = new FileInputStream(vpnInterface.getFileDescriptor());
              FileOutputStream output = new FileOutputStream(vpnInterface.getFileDescriptor())) {
             tunOutput = output;
@@ -183,23 +214,27 @@ public class DnsVpnService extends VpnService {
 
                 dnsQueries.incrementAndGet();
                 String domain = DnsPacketUtils.extractQuestionName(request.dnsPayload);
-                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_DOMAIN, domain).apply();
+                maybeWriteLastDomain(domain, batterySaver);
+                maybeLogDomain(domain, batterySaver);
 
-                long currentQuery = dnsQueries.get();
-                if (currentQuery <= 20 || currentQuery % 25 == 0) {
-                    DebugLog.log(this, "DNS query #" + currentQuery + ": " + domain);
+                if (executor != null && !executor.isShutdown()) {
+                    int beforeQueue = executor.getQueue().size();
+                    executor.execute(() -> handleDnsRequest(request, upstreamServers, domain));
+                    if (beforeQueue >= (batterySaver ? 95 : 255)) {
+                        droppedQueries.incrementAndGet();
+                    }
+                } else {
+                    dnsFailures.incrementAndGet();
                 }
-
-                executor.execute(() -> handleDnsRequest(request, upstreamServers, domain));
                 saveStats(false);
             }
         } catch (Exception e) {
             if (running) {
                 String error = e.getClass().getSimpleName() + ": " + safeMessage(e);
-                DebugLog.log(this, "BŁĄD pętli VPN: " + error);
-                writeStatus(false, error, "Pętla VPN zatrzymana");
+                DebugLog.log(this, "SYSTEM", "VPN loop error: " + error);
+                writeStatus(false, error, "VPN loop stopped");
             } else {
-                DebugLog.log(this, "Pętla VPN zakończona");
+                DebugLog.log(this, "SYSTEM", "VPN loop finished");
             }
         } finally {
             running = false;
@@ -220,13 +255,12 @@ public class DnsVpnService extends VpnService {
             synchronized (this) {
                 if (tunOutput != null && running) {
                     tunOutput.write(responsePacket);
-                    tunOutput.flush();
                     dnsResponses.incrementAndGet();
                 }
             }
         } catch (Exception e) {
             dnsFailures.incrementAndGet();
-            DebugLog.log(this, "BŁĄD odpowiedzi dla " + domain + ": " + e.getClass().getSimpleName());
+            DebugLog.log(this, logGroup, "Response write error for " + domain + ": " + e.getClass().getSimpleName());
         }
         saveStats(false);
     }
@@ -237,7 +271,7 @@ public class DnsVpnService extends VpnService {
 
             try (DatagramSocket socket = new DatagramSocket()) {
                 protect(socket);
-                socket.setSoTimeout(5000);
+                socket.setSoTimeout(3000);
 
                 InetAddress address = InetAddress.getByName(server.trim());
                 DatagramPacket request = new DatagramPacket(dnsPayload, dnsPayload.length, address, 53);
@@ -248,10 +282,28 @@ public class DnsVpnService extends VpnService {
                 socket.receive(response);
                 return Arrays.copyOf(response.getData(), response.getLength());
             } catch (Exception e) {
-                DebugLog.log(this, "Upstream " + server + " nie odpowiedział dla " + domain + ": " + e.getClass().getSimpleName());
+                long failures = dnsFailures.get();
+                if (failures < 10 || failures % 50 == 0) {
+                    DebugLog.log(this, logGroup, "Upstream " + server + " failed for " + domain + ": " + e.getClass().getSimpleName());
+                }
             }
         }
         return null;
+    }
+
+    private void stopVpn(String reason) {
+        running = false;
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = null;
+        }
+        closeQuietly(vpnInterface);
+        vpnInterface = null;
+        tunOutput = null;
+        writeStatus(false, reason == null ? "" : reason, reason == null ? "Stopped" : reason);
+        updateNotification("DNS stopped");
+        stopForeground(true);
+        DebugLog.log(this, "SYSTEM", "VPN stopped: " + (reason == null ? "no reason" : reason));
     }
 
     private String[] getUpstreamServers() {
@@ -262,36 +314,44 @@ public class DnsVpnService extends VpnService {
     }
 
     private String cleanDns(String value, String fallback) {
-        String trimmed = value == null ? "" : value.trim();
-        return trimmed.isEmpty() ? fallback : trimmed;
+        if (value == null) return fallback;
+        String cleaned = value.trim();
+        return cleaned.isEmpty() ? fallback : cleaned;
     }
 
-    private void stopVpn(String reason) {
-        boolean wasRunning = running;
-        running = false;
-
-        if (executor != null) {
-            executor.shutdownNow();
-            executor = null;
+    private boolean shouldLogDomains(boolean allApps, Set<String> selectedApps, Set<String> loggingApps) {
+        if (loggingApps == null || loggingApps.isEmpty()) return false;
+        if (allApps) return loggingApps.contains("__ALL__");
+        if (selectedApps == null || selectedApps.isEmpty()) return false;
+        for (String pkg : selectedApps) {
+            if (loggingApps.contains(pkg)) return true;
         }
+        return false;
+    }
 
-        try {
-            if (vpnInterface != null) vpnInterface.close();
-        } catch (Exception ignored) {
+    private String resolveLogGroup(boolean allApps, Set<String> selectedApps) {
+        if (allApps) return "ALL_APPS";
+        if (selectedApps != null && selectedApps.size() == 1) {
+            return selectedApps.iterator().next();
         }
-        vpnInterface = null;
-        tunOutput = null;
+        int count = selectedApps == null ? 0 : selectedApps.size();
+        return "SELECTED_APPS_" + count;
+    }
 
-        try {
-            stopForeground(true);
-        } catch (Exception ignored) {
-        }
+    private void maybeWriteLastDomain(String domain, boolean batterySaver) {
+        long now = System.currentTimeMillis();
+        long interval = batterySaver ? 2000 : 650;
+        if (now - lastDomainWriteMs < interval) return;
+        lastDomainWriteMs = now;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_DOMAIN, domain).apply();
+    }
 
-        writeStatus(false, reason == null ? "" : reason, wasRunning ? "VPN zatrzymany" : "VPN nieaktywny");
-        saveStats(true);
-        if (reason != null && !reason.trim().isEmpty()) {
-            DebugLog.log(this, "Status: " + reason);
-        }
+    private void maybeLogDomain(String domain, boolean batterySaver) {
+        if (!domainLoggingEnabled) return;
+        long n = dnsQueries.get();
+        if (batterySaver && n % 10 != 1) return;
+        if (!batterySaver && n > 80 && n % 5 != 0) return;
+        DebugLog.log(this, logGroup, "DNS query #" + n + ": " + domain);
     }
 
     private void writeStatus(boolean isRunning, String lastError, String lastEvent) {
@@ -299,13 +359,16 @@ public class DnsVpnService extends VpnService {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         boolean allApps = prefs.getBoolean(PREF_ALL_APPS, true);
         Set<String> selectedApps = prefs.getStringSet(PREF_SELECTED_APPS, new LinkedHashSet<String>());
+        String serverName = prefs.getString(PREF_SERVER_NAME, "AdGuard DNS");
 
         SharedPreferences.Editor editor = prefs.edit()
                 .putBoolean(PREF_RUNNING, isRunning)
                 .putString(PREF_LAST_ERROR, lastError == null ? "" : lastError)
                 .putString(PREF_LAST_EVENT, lastEvent == null ? "" : lastEvent)
                 .putString(PREF_ACTIVE_DNS, dns[0] + ", " + dns[1])
-                .putString(PREF_ACTIVE_MODE, allApps ? "Wszystkie aplikacje" : "Wybrane aplikacje: " + (selectedApps == null ? 0 : selectedApps.size()));
+                .putString(PREF_ACTIVE_SERVER, serverName)
+                .putString(PREF_ACTIVE_GROUP, logGroup)
+                .putString(PREF_ACTIVE_MODE, allApps ? "All apps" : "Selected apps: " + (selectedApps == null ? 0 : selectedApps.size()));
         if (isRunning) {
             editor.putLong(PREF_STARTED_AT, System.currentTimeMillis());
         }
@@ -315,13 +378,14 @@ public class DnsVpnService extends VpnService {
 
     private void saveStats(boolean force) {
         long now = System.currentTimeMillis();
-        if (!force && now - lastStatsWriteMs < 1000) return;
+        if (!force && now - lastStatsWriteMs < 1500) return;
         lastStatsWriteMs = now;
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putLong(PREF_PACKETS, packets.get())
                 .putLong(PREF_DNS_QUERIES, dnsQueries.get())
                 .putLong(PREF_DNS_RESPONSES, dnsResponses.get())
                 .putLong(PREF_DNS_FAILURES, dnsFailures.get())
+                .putLong(PREF_DNS_DROPPED, droppedQueries.get())
                 .apply();
     }
 
@@ -330,9 +394,7 @@ public class DnsVpnService extends VpnService {
 
         Intent openIntent = new Intent(this, MainActivity.class);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags |= PendingIntent.FLAG_IMMUTABLE;
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, openIntent, flags);
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
@@ -350,26 +412,28 @@ public class DnsVpnService extends VpnService {
 
     private void updateNotification(String text) {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (manager != null) {
-            manager.notify(NOTIFICATION_ID, buildNotification(text));
-        }
+        if (manager != null) manager.notify(NOTIFICATION_ID, buildNotification(text));
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (manager == null) return;
-        NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                "AdGuard TV DNS Pro",
-                NotificationManager.IMPORTANCE_LOW
-        );
-        channel.setDescription("Status lokalnego DNS przez VPN");
+        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "AdGuard TV DNS Pro", NotificationManager.IMPORTANCE_LOW);
+        channel.setDescription("Local DNS over VPN status");
         manager.createNotificationChannel(channel);
+    }
+
+    private void closeQuietly(ParcelFileDescriptor pfd) {
+        if (pfd == null) return;
+        try {
+            pfd.close();
+        } catch (Exception ignored) {
+        }
     }
 
     private String safeMessage(Exception e) {
         String message = e.getMessage();
-        return message == null ? "brak szczegółów" : message;
+        return message == null ? "no details" : message;
     }
 }

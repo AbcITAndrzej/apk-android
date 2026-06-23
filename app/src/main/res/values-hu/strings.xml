@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">AdGuard TV DNS Pro</string>
+    <string name="home">Kezdőlap</string>
+    <string name="apps">Alkalmazások</string>
+    <string name="servers">Szerverek</string>
+    <string name="logs">Naplók</string>
+    <string name="connect">CSATLAKOZÁS</string>
+    <string name="stop">STOP</string>
+    <string name="on">BE</string>
+    <string name="off">KI</string>
+    <string name="all_apps">Minden app</string>
+    <string name="selected_apps">Kijelölt appok</string>
+    <string name="search_apps">App keresése…</string>
+    <string name="active">AKTÍV</string>
+    <string name="inactive">INAKTÍV</string>
+</resources>

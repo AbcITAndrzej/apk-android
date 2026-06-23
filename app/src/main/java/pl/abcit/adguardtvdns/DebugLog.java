@@ -2,52 +2,100 @@ package pl.abcit.adguardtvdns;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 final class DebugLog {
-    static final String PREF_LOGS = "debug_logs";
-    private static final String TAG = "AdGuardTvDns";
-    private static final int MAX_CHARS = 24000;
+    private static final String PREFS = "dns_debug_log";
+    private static final String KEY_LINES = "lines";
+    private static final int MAX_LINES = 280;
+    private static final SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
-    private DebugLog() {
-    }
+    private DebugLog() {}
 
     static synchronized void log(Context context, String message) {
+        log(context, "SYSTEM", message);
+    }
+
+    static synchronized void log(Context context, String group, String message) {
         if (context == null || message == null) return;
-        String line = now() + "  " + message + "\n";
-        SharedPreferences prefs = context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE);
-        String old = prefs.getString(PREF_LOGS, "");
-        String merged = old + line;
-        if (merged.length() > MAX_CHARS) {
-            merged = merged.substring(merged.length() - MAX_CHARS);
-            int firstNewLine = merged.indexOf('\n');
-            if (firstNewLine >= 0 && firstNewLine + 1 < merged.length()) {
-                merged = merged.substring(firstNewLine + 1);
-            }
+        String safeGroup = sanitize(group == null || group.trim().isEmpty() ? "SYSTEM" : group.trim());
+        String safeMessage = sanitize(message);
+        String line = FORMAT.format(new Date()) + " | " + safeGroup + " | " + safeMessage;
+
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        List<String> lines = readLinesInternal(prefs);
+        lines.add(line);
+        while (lines.size() > MAX_LINES) {
+            lines.remove(0);
         }
-        prefs.edit().putString(PREF_LOGS, merged).apply();
-        Log.d(TAG, message);
+        prefs.edit().putString(KEY_LINES, join(lines)).apply();
+    }
+
+    static synchronized List<String> readLines(Context context) {
+        if (context == null) return new ArrayList<>();
+        return readLinesInternal(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE));
     }
 
     static synchronized String read(Context context) {
-        if (context == null) return "";
-        return context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE)
-                .getString(PREF_LOGS, "");
+        return join(readLines(context));
+    }
+
+    static synchronized Map<String, List<String>> readGrouped(Context context) {
+        List<String> lines = readLines(context);
+        Map<String, List<String>> grouped = new LinkedHashMap<>();
+        Collections.reverse(lines);
+        for (String line : lines) {
+            String group = "SYSTEM";
+            String rest = line;
+            String[] parts = line.split(" \\| ", 3);
+            if (parts.length == 3) {
+                group = parts[1];
+                rest = parts[0] + "  " + parts[2];
+            }
+            List<String> list = grouped.get(group);
+            if (list == null) {
+                list = new ArrayList<>();
+                grouped.put(group, list);
+            }
+            if (list.size() < 18) list.add(rest);
+        }
+        return grouped;
     }
 
     static synchronized void clear(Context context) {
         if (context == null) return;
-        context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE)
-                .edit()
-                .putString(PREF_LOGS, now() + "  Log wyczyszczony\n")
-                .apply();
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_LINES).apply();
     }
 
-    private static String now() {
-        return new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+    private static List<String> readLinesInternal(SharedPreferences prefs) {
+        String raw = prefs.getString(KEY_LINES, "");
+        List<String> result = new ArrayList<>();
+        if (raw == null || raw.trim().isEmpty()) return result;
+        String[] split = raw.split("\\n");
+        for (String s : split) {
+            if (s != null && !s.trim().isEmpty()) result.add(s);
+        }
+        return result;
+    }
+
+    private static String join(List<String> lines) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0) builder.append('\n');
+            builder.append(lines.get(i));
+        }
+        return builder.toString();
+    }
+
+    private static String sanitize(String s) {
+        return s.replace('\n', ' ').replace('\r', ' ').replace('|', '/');
     }
 }

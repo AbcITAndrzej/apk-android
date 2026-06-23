@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">AdGuard TV DNS Pro</string>
+    <string name="home">Home</string>
+    <string name="apps">Apps</string>
+    <string name="servers">Servers</string>
+    <string name="logs">Logs</string>
+    <string name="connect">CONNECT</string>
+    <string name="stop">STOP</string>
+    <string name="on">ON</string>
+    <string name="off">OFF</string>
+    <string name="all_apps">All apps</string>
+    <string name="selected_apps">Selected apps</string>
+    <string name="search_apps">Search apps…</string>
+    <string name="active">ACTIVE</string>
+    <string name="inactive">INACTIVE</string>
+</resources>

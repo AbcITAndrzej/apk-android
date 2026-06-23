@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">AdGuard TV DNS Pro</string>
+    <string name="home">Αρχική</string>
+    <string name="apps">Εφαρμογές</string>
+    <string name="servers">Διακομιστές</string>
+    <string name="logs">Αρχεία</string>
+    <string name="connect">ΣΥΝΔΕΣΗ</string>
+    <string name="stop">STOP</string>
+    <string name="on">ON</string>
+    <string name="off">OFF</string>
+    <string name="all_apps">Όλες οι εφαρμογές</string>
+    <string name="selected_apps">Επιλεγμένες εφαρμογές</string>
+    <string name="search_apps">Αναζήτηση…</string>
+    <string name="active">ΕΝΕΡΓΟ</string>
+    <string name="inactive">ΑΝΕΝΕΡΓΟ</string>
+</resources>

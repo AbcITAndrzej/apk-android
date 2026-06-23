@@ -10,8 +10,8 @@ android {
         applicationId 'pl.abcit.adguardtvdns'
         minSdk 23
         targetSdk 29
-        versionCode 2
-        versionName '2.0-debug'
+        versionCode 3
+        versionName '3.0-pro-debug'
     }
 
     compileOptions {
