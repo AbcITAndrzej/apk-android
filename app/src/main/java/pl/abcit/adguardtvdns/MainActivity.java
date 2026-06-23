@@ -1639,7 +1639,7 @@ public class MainActivity extends Activity {
             }
         }
         if (!value.matches("[0-9.]+")) return false;
-        String[] parts = value.split("\.");
+        String[] parts = value.split("\\.");
         if (parts.length != 4) return false;
         try {
             for (String part : parts) {
