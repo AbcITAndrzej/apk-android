@@ -40,4 +40,7 @@
     <string name="cleared">Gelöscht</string>
     <string name="server_saved">Server gespeichert</string>
     <string name="server_selected">Server ausgewählt</string>
+    <string name="clear_cache">Cache / Protokolle löschen</string>
+    <string name="cache_cleared">Cache und Protokolle gelöscht</string>
+    <string name="power_button_hint">Ein/Aus: DNS-VPN verbinden oder stoppen</string>
 </resources>

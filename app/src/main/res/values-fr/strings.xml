@@ -40,4 +40,7 @@
     <string name="cleared">Effacé</string>
     <string name="server_saved">Serveur enregistré</string>
     <string name="server_selected">Serveur sélectionné</string>
+    <string name="clear_cache">Vider le cache / journaux</string>
+    <string name="cache_cleared">Cache et journaux effacés</string>
+    <string name="power_button_hint">Bouton marche/arrêt : connecter ou arrêter le VPN DNS</string>
 </resources>

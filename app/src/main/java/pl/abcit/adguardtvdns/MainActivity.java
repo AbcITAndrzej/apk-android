@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
     private FrameLayout contentFrame;
     private TextView titleView;
     private TextView statusBadge;
+    private Button starPowerButton;
     private Button tabHome;
     private Button tabApps;
     private Button tabServers;
@@ -96,7 +97,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.0 pro debug");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.1 pro debug");
     }
 
     @Override protected void onResume() {
@@ -193,10 +194,10 @@ public class MainActivity extends Activity {
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
         root.addView(hero, matchWrap());
 
-        TextView logo = text("✦", 74, true, 0xFFD9DEE7);
-        logo.setGravity(Gravity.CENTER);
-        logo.setBackground(makeSolid(0xFF263548, 160, 0xFF6EADEB, 2));
-        hero.addView(logo, new LinearLayout.LayoutParams(dp(154), dp(154)));
+        starPowerButton = baseButton("✦", 0xFF263548, 0xFF3C95F4, 0xFFD9DEE7, 58);
+        starPowerButton.setContentDescription(getString(R.string.power_button_hint));
+        starPowerButton.setOnClickListener(v -> toggleDnsVpn());
+        hero.addView(starPowerButton, new LinearLayout.LayoutParams(dp(154), dp(154)));
 
         hero.addView(space(1, 18));
         TextView serverLabel = text(getString(R.string.current_server) + ":", 16, false, 0xFFB8C4D8);
@@ -449,6 +450,14 @@ public class MainActivity extends Activity {
         clear.setOnClickListener(v -> { DebugLog.clear(this); renderLogsOnly(); toast(getString(R.string.cleared)); });
         row.addView(clear, new LinearLayout.LayoutParams(0, dp(56), 1));
 
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(10), 0, 0);
+        actions.addView(row2, matchWrap());
+        Button cache = neutralButton(getString(R.string.clear_cache));
+        cache.setOnClickListener(v -> clearLocalCache());
+        row2.addView(cache, new LinearLayout.LayoutParams(0, dp(56), 1));
+
         root.addView(space(1, 16));
         groupedLogsLayout = vertical();
         root.addView(groupedLogsLayout, matchWrap());
@@ -486,32 +495,50 @@ public class MainActivity extends Activity {
 
     private View appRow(AppItem item, boolean allApps, boolean selected, boolean logging) {
         LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(dp(12), dp(10), dp(12), dp(10));
         row.setFocusable(true);
+        row.setClickable(true);
         applyFocus(row, 0xFF172435, 0xFF243A58, 18);
+
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(top, matchWrap());
 
         ImageView icon = new ImageView(this);
         if (item.icon != null) icon.setImageDrawable(item.icon);
-        row.addView(icon, new LinearLayout.LayoutParams(dp(52), dp(52)));
+        top.addView(icon, new LinearLayout.LayoutParams(dp(46), dp(46)));
 
         LinearLayout labels = vertical();
-        labels.setPadding(dp(14), 0, dp(8), 0);
-        TextView name = text(item.label, 18, true, 0xFFFFFFFF);
-        TextView pkg = text(item.packageName, 12, false, 0xFF8FA3BD);
+        labels.setPadding(dp(12), 0, dp(4), 0);
+        TextView name = text(item.label, 17, true, 0xFFFFFFFF);
+        name.setSingleLine(false);
+        TextView pkg = text(item.packageName, 11, false, 0xFF8FA3BD);
+        pkg.setSingleLine(true);
         labels.addView(name);
         labels.addView(pkg);
-        row.addView(labels, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        top.addView(labels, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+
+        TextView state = text(allApps || selected ? "●" : "○", 28, true, allApps || selected ? 0xFF6FF2B2 : 0xFF7B8DA7);
+        state.setGravity(Gravity.CENTER);
+        top.addView(state, new LinearLayout.LayoutParams(dp(38), dp(46)));
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(dp(58), dp(10), 0, 0);
+        row.addView(actions, matchWrap());
 
         Button dns = smallStateButton(allApps || selected ? getString(R.string.dns_enabled) : getString(R.string.dns_disabled), allApps || selected);
         dns.setOnClickListener(v -> toggleAppSelected(item.packageName));
-        row.addView(dns, new LinearLayout.LayoutParams(dp(118), dp(54)));
-        row.addView(gap(8, 1));
+        actions.addView(dns, new LinearLayout.LayoutParams(0, dp(50), 1));
+        actions.addView(gap(10, 1));
 
         Button log = smallStateButton(logging ? getString(R.string.log_enabled) : getString(R.string.log_disabled), logging);
         log.setOnClickListener(v -> toggleAppLogging(item.packageName));
-        row.addView(log, new LinearLayout.LayoutParams(dp(112), dp(54)));
+        actions.addView(log, new LinearLayout.LayoutParams(0, dp(50), 1));
+
+        row.setOnClickListener(v -> toggleAppSelected(item.packageName));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, 0, 0, dp(8));
@@ -609,6 +636,41 @@ public class MainActivity extends Activity {
         refreshStatusViews();
     }
 
+    private void toggleDnsVpn() {
+        if (getPrefs().getBoolean(DnsVpnService.PREF_RUNNING, false)) {
+            stopDnsVpn();
+        } else {
+            startDnsVpn();
+        }
+    }
+
+    private void clearLocalCache() {
+        deleteDirContent(getCacheDir());
+        DebugLog.clear(this);
+        getPrefs().edit()
+                .putLong(DnsVpnService.PREF_PACKETS, 0)
+                .putLong(DnsVpnService.PREF_DNS_QUERIES, 0)
+                .putLong(DnsVpnService.PREF_DNS_RESPONSES, 0)
+                .putLong(DnsVpnService.PREF_DNS_FAILURES, 0)
+                .putLong(DnsVpnService.PREF_DNS_DROPPED, 0)
+                .putString(DnsVpnService.PREF_LAST_DOMAIN, "-")
+                .putString(DnsVpnService.PREF_LAST_ERROR, "")
+                .apply();
+        refreshStatusViews();
+        renderLogsOnly();
+        toast(getString(R.string.cache_cleared));
+    }
+
+    private void deleteDirContent(java.io.File dir) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) return;
+        java.io.File[] files = dir.listFiles();
+        if (files == null) return;
+        for (java.io.File f : files) {
+            if (f.isDirectory()) deleteDirContent(f);
+            try { f.delete(); } catch (Exception ignored) {}
+        }
+    }
+
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_VPN && resultCode == RESULT_OK) {
@@ -626,6 +688,11 @@ public class MainActivity extends Activity {
         if (statusBadge != null) {
             statusBadge.setText(running ? getString(R.string.active) : getString(R.string.inactive));
             statusBadge.setBackground(makeSolid(running ? 0xFF1D8B5A : 0xFF7D3240, 22, running ? 0xFF8BFFD0 : 0xFFFF9DA8, 2));
+        }
+        if (starPowerButton != null) {
+            starPowerButton.setText(running ? "★" : "✦");
+            starPowerButton.setTextColor(running ? 0xFFFFD66B : 0xFFD9DEE7);
+            starPowerButton.setBackground(makeSolid(running ? 0xFF3A3014 : 0xFF263548, 160, running ? 0xFFFFD66B : 0xFF6EADEB, running ? 4 : 2));
         }
         String stats = buildStatsText();
         if (homeStatsText != null) homeStatsText.setText(stats);
@@ -949,7 +1016,10 @@ public class MainActivity extends Activity {
         editText.postDelayed(() -> {
             editText.requestFocus();
             InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+            if (imm != null) {
+                imm.showSoftInput(editText, InputMethodManager.SHOW_FORCED);
+                editText.postDelayed(() -> imm.showSoftInput(editText, InputMethodManager.SHOW_FORCED), 250);
+            }
         }, 120);
     }
 

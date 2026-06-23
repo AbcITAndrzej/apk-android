@@ -15,4 +15,7 @@
     <string name="clear_all">Quitar todo</string>
     <string name="active">ACTIVO</string>
     <string name="inactive">INACTIVO</string>
+    <string name="clear_cache">Clear app cache / logs</string>
+    <string name="cache_cleared">App cache and logs cleared</string>
+    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
 </resources>

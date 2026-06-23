@@ -63,5 +63,8 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.0 pro debug</string>
+    <string name="build_flavor">v3.1 pro debug</string>
+    <string name="clear_cache">Clear app cache / logs</string>
+    <string name="cache_cleared">App cache and logs cleared</string>
+    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
 </resources>

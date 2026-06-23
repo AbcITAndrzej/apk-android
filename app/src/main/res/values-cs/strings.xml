@@ -13,4 +13,7 @@
     <string name="search_apps">Hledat aplikace…</string>
     <string name="active">AKTIVNÍ</string>
     <string name="inactive">NEAKTIVNÍ</string>
+    <string name="clear_cache">Clear app cache / logs</string>
+    <string name="cache_cleared">App cache and logs cleared</string>
+    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
 </resources>

@@ -15,4 +15,7 @@
     <string name="clear_all">Deseleziona tutto</string>
     <string name="active">ATTIVO</string>
     <string name="inactive">INATTIVO</string>
+    <string name="clear_cache">Clear app cache / logs</string>
+    <string name="cache_cleared">App cache and logs cleared</string>
+    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
 </resources>

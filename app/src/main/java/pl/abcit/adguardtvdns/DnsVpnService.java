@@ -136,8 +136,20 @@ public class DnsVpnService extends VpnService {
                     .addDnsServer(DnsPacketUtils.VIRTUAL_DNS);
 
             int allowed = 0;
+            if (allApps) {
+                try {
+                    builder.addDisallowedApplication(getPackageName());
+                    DebugLog.log(this, "SYSTEM", "Own app excluded from VPN scope to prevent DNS loop");
+                } catch (Exception e) {
+                    DebugLog.log(this, "SYSTEM", "Could not exclude own app from VPN scope: " + e.getClass().getSimpleName());
+                }
+            }
             if (!allApps && selectedApps != null) {
                 for (String packageName : selectedApps) {
+                    if (getPackageName().equals(packageName)) {
+                        DebugLog.log(this, "SYSTEM", "Skipping own app in selected-app mode to prevent DNS loop");
+                        continue;
+                    }
                     try {
                         builder.addAllowedApplication(packageName);
                         allowed++;
@@ -270,11 +282,16 @@ public class DnsVpnService extends VpnService {
             if (server == null || server.trim().isEmpty()) continue;
 
             try (DatagramSocket socket = new DatagramSocket()) {
-                protect(socket);
-                socket.setSoTimeout(3000);
+                boolean protectedSocket = protect(socket);
+                if (!protectedSocket) {
+                    DebugLog.log(this, "SYSTEM", "ERROR: protect(socket) returned false for upstream " + server);
+                    continue;
+                }
+                socket.setSoTimeout(3500);
 
                 InetAddress address = InetAddress.getByName(server.trim());
-                DatagramPacket request = new DatagramPacket(dnsPayload, dnsPayload.length, address, 53);
+                socket.connect(address, 53);
+                DatagramPacket request = new DatagramPacket(dnsPayload, dnsPayload.length);
                 socket.send(request);
 
                 byte[] buffer = new byte[4096];

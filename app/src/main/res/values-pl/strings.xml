@@ -63,5 +63,8 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.0 pro debug</string>
+    <string name="build_flavor">v3.1 pro debug</string>
+    <string name="clear_cache">Wyczyść cache / logi</string>
+    <string name="cache_cleared">Cache i logi wyczyszczone</string>
+    <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
 </resources>

@@ -40,4 +40,7 @@
     <string name="cleared">Gewist</string>
     <string name="server_saved">Server opgeslagen</string>
     <string name="server_selected">Server geselecteerd</string>
+    <string name="clear_cache">Cache / logs wissen</string>
+    <string name="cache_cleared">Cache en logs gewist</string>
+    <string name="power_button_hint">Aan/uit-knop: DNS-VPN verbinden of stoppen</string>
 </resources>

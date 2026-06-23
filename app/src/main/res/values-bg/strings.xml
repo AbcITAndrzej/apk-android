@@ -13,4 +13,7 @@
     <string name="search_apps">Търсене…</string>
     <string name="active">АКТИВНО</string>
     <string name="inactive">НЕАКТИВНО</string>
+    <string name="clear_cache">Clear app cache / logs</string>
+    <string name="cache_cleared">App cache and logs cleared</string>
+    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
 </resources>
