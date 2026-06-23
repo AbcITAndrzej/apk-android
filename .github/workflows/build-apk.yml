@@ -38,5 +38,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: adguard-tv-dns-pro-v3-1-debug-apk
+          name: adguard-tv-dns-pro-v3-2-debug-apk
           path: app/build/outputs/apk/debug/*.apk

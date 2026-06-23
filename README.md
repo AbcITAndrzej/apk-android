@@ -36,3 +36,14 @@ Po wrzuceniu plików do repozytorium GitHub uruchom `Actions -> Build APK`. Arti
 4. Kliknij ON / CONNECT.
 5. Zaakceptuj zgodę Android VPN.
 6. Wejdź w Logs i sprawdź, czy rosną `queries` i `responses`.
+
+
+## v3.2
+
+- sortowanie aplikacji: najpierw DNS ON, potem DNS OFF
+- filtry: wszystkie / aplikacje z DNS / aplikacje bez DNS
+- profile: zapis aktualnego DNS + zakresu aplikacji
+- szybkie profile aplikacji z ekranu Start
+- eksport/import ustawień do pliku JSON
+
+Uwaga: Android pozwala mieć jeden aktywny profil VPN naraz. Różne DNS dla różnych aplikacji jednocześnie nie są niezawodne bez roota/systemowych uprawnień, bo zwykły pakiet DNS nie zawiera nazwy aplikacji.

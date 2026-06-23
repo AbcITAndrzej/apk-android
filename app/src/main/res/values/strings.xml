@@ -63,8 +63,31 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.1 pro debug</string>
+    <string name="build_flavor">v3.2 profiles debug</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
+
+    <string name="filter_all_apps">All</string>
+    <string name="filter_dns_apps">Apps with DNS</string>
+    <string name="filter_no_dns_apps">Apps without DNS</string>
+    <string name="profiles">Profiles</string>
+    <string name="profiles_hint">Save current DNS + app selection. Tap a profile to apply it and connect.</string>
+    <string name="quick_app_profiles">Quick app profiles</string>
+    <string name="save_current_profile">Save current as profile</string>
+    <string name="clear_profiles">Clear profiles</string>
+    <string name="profile_name_hint">Profile name</string>
+    <string name="profile_saved">Profile saved</string>
+    <string name="quick_selected_shortcuts">Profile shortcuts</string>
+    <string name="quick_profiles_hint">Selected app shortcuts are on Home.</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="export_settings">Export settings</string>
+    <string name="import_settings">Import settings</string>
+    <string name="settings_exported">Settings exported</string>
+    <string name="settings_imported">Settings imported</string>
+    <string name="settings_copied">Settings copied to clipboard</string>
+    <string name="export_failed">Export failed</string>
+    <string name="import_failed">Import failed</string>
+    <string name="import_not_available">Import picker is not available</string>
 </resources>

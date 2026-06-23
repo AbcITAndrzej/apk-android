@@ -63,8 +63,31 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.1 pro debug</string>
+    <string name="build_flavor">v3.2 profiles debug</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
+
+    <string name="filter_all_apps">Wszystkie</string>
+    <string name="filter_dns_apps">Aplikacje z DNS</string>
+    <string name="filter_no_dns_apps">Aplikacje bez DNS</string>
+    <string name="profiles">Profile</string>
+    <string name="profiles_hint">Zapisuje DNS + wybór aplikacji. Kliknięcie profilu stosuje go i łączy.</string>
+    <string name="quick_app_profiles">Szybkie profile aplikacji</string>
+    <string name="save_current_profile">Zapisz obecne jako profil</string>
+    <string name="clear_profiles">Wyczyść profile</string>
+    <string name="profile_name_hint">Nazwa profilu</string>
+    <string name="profile_saved">Profil zapisany</string>
+    <string name="quick_selected_shortcuts">Skróty profili</string>
+    <string name="quick_profiles_hint">Skróty wybranych aplikacji są na ekranie Start.</string>
+    <string name="save">Zapisz</string>
+    <string name="cancel">Anuluj</string>
+    <string name="export_settings">Zapisz ustawienia do pliku</string>
+    <string name="import_settings">Wczytaj ustawienia z pliku</string>
+    <string name="settings_exported">Ustawienia zapisane</string>
+    <string name="settings_imported">Ustawienia wczytane</string>
+    <string name="settings_copied">Ustawienia skopiowane do schowka</string>
+    <string name="export_failed">Błąd zapisu</string>
+    <string name="import_failed">Błąd wczytywania</string>
+    <string name="import_not_available">Wybór pliku jest niedostępny</string>
 </resources>

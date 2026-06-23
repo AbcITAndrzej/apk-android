@@ -1,6 +1,7 @@
 package pl.abcit.adguardtvdns;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Bundle;
@@ -36,6 +38,12 @@ import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +58,12 @@ import java.util.Set;
 
 public class MainActivity extends Activity {
     private static final int REQ_VPN = 42;
+    private static final int REQ_EXPORT_SETTINGS = 70;
+    private static final int REQ_IMPORT_SETTINGS = 71;
+    private static final int APP_FILTER_ALL = 0;
+    private static final int APP_FILTER_DNS = 1;
+    private static final int APP_FILTER_NO_DNS = 2;
+    private static final String PREF_PROFILES_JSON = "profiles_json";
     private static final int SCREEN_HOME = 0;
     private static final int SCREEN_APPS = 1;
     private static final int SCREEN_SERVERS = 2;
@@ -80,6 +94,7 @@ public class MainActivity extends Activity {
 
     private int currentScreen = SCREEN_HOME;
     private String appFilter = "";
+    private int appListFilterMode = APP_FILTER_ALL;
 
     private final Runnable refreshRunnable = new Runnable() {
         @Override public void run() {
@@ -97,7 +112,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.1 pro debug");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.2 profiles debug");
     }
 
     @Override protected void onResume() {
@@ -244,6 +259,9 @@ public class MainActivity extends Activity {
         Button on = segmentedButton(getString(R.string.on), true);
         on.setOnClickListener(v -> startDnsVpn());
         connectRow.addView(on, new LinearLayout.LayoutParams(0, dp(62), 1));
+
+        root.addView(space(1, 16));
+        root.addView(buildProfilesCard(), matchWrap());
 
         root.addView(space(1, 16));
         LinearLayout statsCard = card(0xFF111A28, 0xFF303D51);
@@ -393,6 +411,34 @@ public class MainActivity extends Activity {
         clearAll.setOnClickListener(v -> setAllSelected(false));
         bulkRow2.addView(clearAll, new LinearLayout.LayoutParams(0, dp(54), 1));
 
+        LinearLayout filterRow = new LinearLayout(this);
+        filterRow.setOrientation(LinearLayout.HORIZONTAL);
+        filterRow.setPadding(0, dp(10), 0, 0);
+        tools.addView(filterRow, matchWrap());
+        Button filterAll = modeButton(getString(R.string.filter_all_apps), appListFilterMode == APP_FILTER_ALL);
+        filterAll.setOnClickListener(v -> { appListFilterMode = APP_FILTER_ALL; showScreen(SCREEN_APPS); });
+        filterRow.addView(filterAll, new LinearLayout.LayoutParams(0, dp(54), 1));
+        filterRow.addView(gap(10, 1));
+        Button filterDns = modeButton(getString(R.string.filter_dns_apps), appListFilterMode == APP_FILTER_DNS);
+        filterDns.setOnClickListener(v -> { appListFilterMode = APP_FILTER_DNS; showScreen(SCREEN_APPS); });
+        filterRow.addView(filterDns, new LinearLayout.LayoutParams(0, dp(54), 1));
+        filterRow.addView(gap(10, 1));
+        Button filterNoDns = modeButton(getString(R.string.filter_no_dns_apps), appListFilterMode == APP_FILTER_NO_DNS);
+        filterNoDns.setOnClickListener(v -> { appListFilterMode = APP_FILTER_NO_DNS; showScreen(SCREEN_APPS); });
+        filterRow.addView(filterNoDns, new LinearLayout.LayoutParams(0, dp(54), 1));
+
+        LinearLayout profileRow = new LinearLayout(this);
+        profileRow.setOrientation(LinearLayout.HORIZONTAL);
+        profileRow.setPadding(0, dp(10), 0, 0);
+        tools.addView(profileRow, matchWrap());
+        Button saveProfile = primaryButton(getString(R.string.save_current_profile));
+        saveProfile.setOnClickListener(v -> promptSaveProfile());
+        profileRow.addView(saveProfile, new LinearLayout.LayoutParams(0, dp(56), 1));
+        profileRow.addView(gap(10, 1));
+        Button quickSelected = neutralButton(getString(R.string.quick_selected_shortcuts));
+        quickSelected.setOnClickListener(v -> { toast(getString(R.string.quick_profiles_hint)); showScreen(SCREEN_HOME); });
+        profileRow.addView(quickSelected, new LinearLayout.LayoutParams(0, dp(56), 1));
+
         root.addView(space(1, 16));
         LinearLayout listCard = card(0xFF101A29, 0xFF303D51);
         root.addView(listCard, matchWrap());
@@ -458,6 +504,18 @@ public class MainActivity extends Activity {
         cache.setOnClickListener(v -> clearLocalCache());
         row2.addView(cache, new LinearLayout.LayoutParams(0, dp(56), 1));
 
+        LinearLayout row3 = new LinearLayout(this);
+        row3.setOrientation(LinearLayout.HORIZONTAL);
+        row3.setPadding(0, dp(10), 0, 0);
+        actions.addView(row3, matchWrap());
+        Button exportSettings = neutralButton(getString(R.string.export_settings));
+        exportSettings.setOnClickListener(v -> exportSettingsToFile());
+        row3.addView(exportSettings, new LinearLayout.LayoutParams(0, dp(56), 1));
+        row3.addView(gap(10, 1));
+        Button importSettings = neutralButton(getString(R.string.import_settings));
+        importSettings.setOnClickListener(v -> importSettingsFromFile());
+        row3.addView(importSettings, new LinearLayout.LayoutParams(0, dp(56), 1));
+
         root.addView(space(1, 16));
         groupedLogsLayout = vertical();
         root.addView(groupedLogsLayout, matchWrap());
@@ -475,8 +533,12 @@ public class MainActivity extends Activity {
         int visible = 0;
         int selectedCount = selected.size();
 
-        for (AppItem item : apps) {
+        List<AppItem> display = getAppsSortedForList(selected, allApps);
+        for (AppItem item : display) {
+            boolean effectiveDns = allApps || selected.contains(item.packageName);
             boolean show = q.isEmpty() || item.label.toLowerCase(Locale.US).contains(q) || item.packageName.toLowerCase(Locale.US).contains(q);
+            if (show && appListFilterMode == APP_FILTER_DNS) show = effectiveDns;
+            if (show && appListFilterMode == APP_FILTER_NO_DNS) show = !effectiveDns;
             if (!show) continue;
             visible++;
             appListLayout.addView(appRow(item, allApps, selected.contains(item.packageName), logging.contains(item.packageName)));
@@ -484,13 +546,25 @@ public class MainActivity extends Activity {
 
         if (appCounterText != null) {
             String mode = allApps ? getString(R.string.all_apps) : getString(R.string.selected_apps_count, selectedCount);
-            appCounterText.setText(getString(R.string.installed_apps) + ": " + apps.size() + " / visible: " + visible + " / " + mode);
+            String filter = appListFilterMode == APP_FILTER_DNS ? getString(R.string.filter_dns_apps) : (appListFilterMode == APP_FILTER_NO_DNS ? getString(R.string.filter_no_dns_apps) : getString(R.string.filter_all_apps));
+            appCounterText.setText(getString(R.string.installed_apps) + ": " + apps.size() + " / visible: " + visible + " / " + mode + " / " + filter);
         }
         if (visible == 0) {
             TextView empty = text(getString(R.string.no_apps_found), 16, false, 0xFFFFFFFF);
             empty.setPadding(dp(12), dp(18), dp(12), dp(18));
             appListLayout.addView(empty, matchWrap());
         }
+    }
+
+    private List<AppItem> getAppsSortedForList(Set<String> selected, boolean allApps) {
+        List<AppItem> display = new ArrayList<>(apps);
+        Collections.sort(display, (a, b) -> {
+            boolean aOn = allApps || selected.contains(a.packageName);
+            boolean bOn = allApps || selected.contains(b.packageName);
+            if (aOn != bOn) return aOn ? -1 : 1;
+            return a.label.toLowerCase(Locale.US).compareTo(b.label.toLowerCase(Locale.US));
+        });
+        return display;
     }
 
     private View appRow(AppItem item, boolean allApps, boolean selected, boolean logging) {
@@ -679,7 +753,299 @@ public class MainActivity extends Activity {
         } else if (requestCode == REQ_VPN) {
             DebugLog.log(this, "SYSTEM", "VPN permission denied");
             toast(getString(R.string.vpn_permission_denied));
+        } else if (requestCode == REQ_EXPORT_SETTINGS && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            writeSettingsExport(data.getData());
+        } else if (requestCode == REQ_IMPORT_SETTINGS && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            readSettingsImport(data.getData());
         }
+    }
+
+    private LinearLayout buildProfilesCard() {
+        LinearLayout card = card(0xFF101A29, 0xFF303D51);
+        card.addView(text(getString(R.string.profiles), 21, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.profiles_hint), 14, false, 0xFFB8C4D8);
+        hint.setPadding(0, dp(4), 0, dp(12));
+        card.addView(hint);
+
+        List<Profile> profiles = readProfiles();
+        if (!profiles.isEmpty()) {
+            LinearLayout row = null;
+            for (int i = 0; i < profiles.size(); i++) {
+                if (i % 2 == 0) {
+                    row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setPadding(0, i == 0 ? 0 : dp(10), 0, 0);
+                    card.addView(row, matchWrap());
+                }
+                Profile profile = profiles.get(i);
+                Button b = primaryButton(profile.name);
+                b.setText(profile.name + "\n" + profile.serverName);
+                b.setOnClickListener(v -> applyProfileAndConnect(profile));
+                row.addView(b, new LinearLayout.LayoutParams(0, dp(72), 1));
+                if (i % 2 == 0) row.addView(gap(10, 1));
+            }
+        }
+
+        Set<String> selected = getSelectedApps();
+        if (!selected.isEmpty()) {
+            TextView quick = text(getString(R.string.quick_app_profiles), 16, true, 0xFFFFFFFF);
+            quick.setPadding(0, dp(14), 0, dp(8));
+            card.addView(quick);
+            LinearLayout row = null;
+            int shown = 0;
+            for (String pkg : selected) {
+                String label = appLabels.get(pkg);
+                if (label == null) continue;
+                if (shown >= 8) break;
+                if (shown % 2 == 0) {
+                    row = new LinearLayout(this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setPadding(0, shown == 0 ? 0 : dp(10), 0, 0);
+                    card.addView(row, matchWrap());
+                }
+                Button b = neutralButton(label);
+                b.setText(label + "\n" + getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS"));
+                final String packageName = pkg;
+                final String appLabel = label;
+                b.setOnClickListener(v -> applySingleAppAndConnect(packageName, appLabel));
+                row.addView(b, new LinearLayout.LayoutParams(0, dp(72), 1));
+                if (shown % 2 == 0) row.addView(gap(10, 1));
+                shown++;
+            }
+        }
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(0, dp(14), 0, 0);
+        card.addView(actions, matchWrap());
+        Button save = primaryButton(getString(R.string.save_current_profile));
+        save.setOnClickListener(v -> promptSaveProfile());
+        actions.addView(save, new LinearLayout.LayoutParams(0, dp(56), 1));
+        actions.addView(gap(10, 1));
+        Button clear = dangerButton(getString(R.string.clear_profiles));
+        clear.setOnClickListener(v -> { getPrefs().edit().remove(PREF_PROFILES_JSON).apply(); toast(getString(R.string.cleared)); showScreen(SCREEN_HOME); });
+        actions.addView(clear, new LinearLayout.LayoutParams(0, dp(56), 1));
+        return card;
+    }
+
+    private void promptSaveProfile() {
+        final EditText input = editText("");
+        input.setText(guessProfileName());
+        input.setSelectAllOnFocus(true);
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.save_current_profile))
+                .setMessage(getString(R.string.profile_name_hint))
+                .setView(input)
+                .setPositiveButton(getString(R.string.save), (dialog, which) -> saveCurrentProfile(input.getText().toString().trim()))
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show();
+        input.requestFocus();
+        showKeyboard(input);
+    }
+
+    private String guessProfileName() {
+        if (!isAllAppsMode() && getSelectedApps().size() == 1) {
+            String pkg = getSelectedApps().iterator().next();
+            String label = appLabels.get(pkg);
+            if (label != null && !label.trim().isEmpty()) return label;
+        }
+        return getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS") + " " + new SimpleDateFormat("HH:mm", Locale.US).format(new Date());
+    }
+
+    private void saveCurrentProfile(String name) {
+        if (name == null || name.trim().isEmpty()) name = guessProfileName();
+        Profile profile = new Profile();
+        profile.name = name.trim();
+        profile.serverName = getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS");
+        profile.dns1 = getPrefs().getString(DnsVpnService.PREF_DNS_1, "94.140.14.14");
+        profile.dns2 = getPrefs().getString(DnsVpnService.PREF_DNS_2, "94.140.15.15");
+        profile.allApps = isAllAppsMode();
+        profile.packages = getSelectedApps();
+
+        List<Profile> profiles = readProfiles();
+        List<Profile> next = new ArrayList<>();
+        for (Profile existing : profiles) {
+            if (!existing.name.equalsIgnoreCase(profile.name)) next.add(existing);
+        }
+        next.add(0, profile);
+        while (next.size() > 12) next.remove(next.size() - 1);
+        writeProfiles(next);
+        DebugLog.log(this, "SYSTEM", "Profile saved: " + profile.name);
+        toast(getString(R.string.profile_saved));
+        showScreen(SCREEN_HOME);
+    }
+
+    private void applyProfileAndConnect(Profile profile) {
+        if (profile == null) return;
+        getPrefs().edit()
+                .putString(DnsVpnService.PREF_SERVER_NAME, profile.serverName)
+                .putString(DnsVpnService.PREF_DNS_1, profile.dns1)
+                .putString(DnsVpnService.PREF_DNS_2, profile.dns2)
+                .putBoolean(DnsVpnService.PREF_ALL_APPS, profile.allApps)
+                .putStringSet(DnsVpnService.PREF_SELECTED_APPS, profile.packages == null ? new LinkedHashSet<String>() : profile.packages)
+                .apply();
+        DebugLog.log(this, "SYSTEM", "Profile applied: " + profile.name);
+        startDnsVpn();
+    }
+
+    private void applySingleAppAndConnect(String packageName, String label) {
+        Set<String> one = new LinkedHashSet<>();
+        one.add(packageName);
+        getPrefs().edit()
+                .putBoolean(DnsVpnService.PREF_ALL_APPS, false)
+                .putStringSet(DnsVpnService.PREF_SELECTED_APPS, one)
+                .apply();
+        DebugLog.log(this, packageName, "Quick single-app profile started: " + label);
+        startDnsVpn();
+    }
+
+    private List<Profile> readProfiles() {
+        List<Profile> out = new ArrayList<>();
+        String json = getPrefs().getString(PREF_PROFILES_JSON, "[]");
+        try {
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                Profile p = new Profile();
+                p.name = o.optString("name", "Profile " + (i + 1));
+                p.serverName = o.optString("serverName", "AdGuard DNS");
+                p.dns1 = o.optString("dns1", "94.140.14.14");
+                p.dns2 = o.optString("dns2", "94.140.15.15");
+                p.allApps = o.optBoolean("allApps", false);
+                p.packages = new LinkedHashSet<>();
+                JSONArray pkgs = o.optJSONArray("packages");
+                if (pkgs != null) for (int j = 0; j < pkgs.length(); j++) p.packages.add(pkgs.optString(j));
+                out.add(p);
+            }
+        } catch (Exception e) {
+            DebugLog.log(this, "SYSTEM", "Profile read error: " + e.getClass().getSimpleName());
+        }
+        return out;
+    }
+
+    private void writeProfiles(List<Profile> profiles) {
+        try {
+            JSONArray arr = new JSONArray();
+            for (Profile p : profiles) {
+                JSONObject o = new JSONObject();
+                o.put("name", p.name);
+                o.put("serverName", p.serverName);
+                o.put("dns1", p.dns1);
+                o.put("dns2", p.dns2);
+                o.put("allApps", p.allApps);
+                JSONArray pkgs = new JSONArray();
+                if (p.packages != null) for (String pkg : p.packages) pkgs.put(pkg);
+                o.put("packages", pkgs);
+                arr.put(o);
+            }
+            getPrefs().edit().putString(PREF_PROFILES_JSON, arr.toString()).apply();
+        } catch (Exception e) {
+            DebugLog.log(this, "SYSTEM", "Profile write error: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private void exportSettingsToFile() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/json");
+            intent.putExtra(Intent.EXTRA_TITLE, "adguard-tv-dns-settings.json");
+            startActivityForResult(intent, REQ_EXPORT_SETTINGS);
+        } catch (Exception e) {
+            copySettingsToClipboard();
+        }
+    }
+
+    private void importSettingsFromFile() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("application/json");
+            startActivityForResult(intent, REQ_IMPORT_SETTINGS);
+        } catch (Exception e) {
+            toast(getString(R.string.import_not_available));
+        }
+    }
+
+    private void writeSettingsExport(Uri uri) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+            if (out == null) throw new Exception("No output stream");
+            out.write(buildSettingsJson().getBytes(StandardCharsets.UTF_8));
+            toast(getString(R.string.settings_exported));
+        } catch (Exception e) {
+            toast(getString(R.string.export_failed));
+            DebugLog.log(this, "SYSTEM", "Export failed: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private void readSettingsImport(Uri uri) {
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) throw new Exception("No input stream");
+            byte[] buffer = new byte[8192];
+            StringBuilder sb = new StringBuilder();
+            int n;
+            while ((n = in.read(buffer)) > 0) sb.append(new String(buffer, 0, n, StandardCharsets.UTF_8));
+            applySettingsJson(sb.toString());
+            toast(getString(R.string.settings_imported));
+            showScreen(SCREEN_HOME);
+        } catch (Exception e) {
+            toast(getString(R.string.import_failed));
+            DebugLog.log(this, "SYSTEM", "Import failed: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private void copySettingsToClipboard() {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("adguard-tv-dns-settings.json", buildSettingsJson()));
+            toast(getString(R.string.settings_copied));
+        }
+    }
+
+    private String buildSettingsJson() {
+        try {
+            SharedPreferences p = getPrefs();
+            JSONObject o = new JSONObject();
+            o.put("format", "adguard-tv-dns-pro");
+            o.put("version", 32);
+            o.put("serverName", p.getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS"));
+            o.put("dns1", p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
+            o.put("dns2", p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
+            o.put("allApps", p.getBoolean(DnsVpnService.PREF_ALL_APPS, true));
+            o.put("batterySaver", p.getBoolean(DnsVpnService.PREF_BATTERY_SAVER, true));
+            JSONArray selected = new JSONArray();
+            for (String pkg : getSelectedApps()) selected.put(pkg);
+            o.put("selectedApps", selected);
+            JSONArray logging = new JSONArray();
+            for (String pkg : getLoggingApps()) logging.put(pkg);
+            o.put("loggingApps", logging);
+            o.put("profiles", new JSONArray(p.getString(PREF_PROFILES_JSON, "[]")));
+            return o.toString(2);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private void applySettingsJson(String json) throws Exception {
+        JSONObject o = new JSONObject(json);
+        Set<String> selected = new LinkedHashSet<>();
+        JSONArray selectedArr = o.optJSONArray("selectedApps");
+        if (selectedArr != null) for (int i = 0; i < selectedArr.length(); i++) selected.add(selectedArr.optString(i));
+        Set<String> logging = new LinkedHashSet<>();
+        JSONArray loggingArr = o.optJSONArray("loggingApps");
+        if (loggingArr != null) for (int i = 0; i < loggingArr.length(); i++) logging.add(loggingArr.optString(i));
+        JSONArray profiles = o.optJSONArray("profiles");
+        getPrefs().edit()
+                .putString(DnsVpnService.PREF_SERVER_NAME, o.optString("serverName", "AdGuard DNS"))
+                .putString(DnsVpnService.PREF_DNS_1, o.optString("dns1", "94.140.14.14"))
+                .putString(DnsVpnService.PREF_DNS_2, o.optString("dns2", "94.140.15.15"))
+                .putBoolean(DnsVpnService.PREF_ALL_APPS, o.optBoolean("allApps", true))
+                .putBoolean(DnsVpnService.PREF_BATTERY_SAVER, o.optBoolean("batterySaver", true))
+                .putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected)
+                .putStringSet(DnsVpnService.PREF_LOGGING_APPS, logging)
+                .putString(PREF_PROFILES_JSON, profiles == null ? "[]" : profiles.toString())
+                .apply();
+        DebugLog.log(this, "SYSTEM", "Settings imported from file");
     }
 
     private void refreshStatusViews() {
@@ -1044,6 +1410,15 @@ public class MainActivity extends Activity {
         StringBuilder sb = new StringBuilder();
         for (String s : lines) sb.append(s).append('\n');
         return sb.toString();
+    }
+
+    private static class Profile {
+        String name;
+        String serverName;
+        String dns1;
+        String dns2;
+        boolean allApps;
+        Set<String> packages = new LinkedHashSet<>();
     }
 
     private static class AppItem {
