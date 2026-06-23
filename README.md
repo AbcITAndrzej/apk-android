@@ -38,7 +38,7 @@ Po wrzuceniu plików do repozytorium GitHub uruchom `Actions -> Build APK`. Arti
 6. Wejdź w Logs i sprawdź, czy rosną `queries` i `responses`.
 
 
-## v3.2
+## v3.3
 
 - sortowanie aplikacji: najpierw DNS ON, potem DNS OFF
 - filtry: wszystkie / aplikacje z DNS / aplikacje bez DNS
@@ -47,3 +47,10 @@ Po wrzuceniu plików do repozytorium GitHub uruchom `Actions -> Build APK`. Arti
 - eksport/import ustawień do pliku JSON
 
 Uwaga: Android pozwala mieć jeden aktywny profil VPN naraz. Różne DNS dla różnych aplikacji jednocześnie nie są niezawodne bez roota/systemowych uprawnień, bo zwykły pakiet DNS nie zawiera nazwy aplikacji.
+
+
+## v3.3 settings debug
+- Gear button on Home opens Settings.
+- Export/import moved to Settings.
+- Language selector added.
+- Cloud save beta placeholder added.

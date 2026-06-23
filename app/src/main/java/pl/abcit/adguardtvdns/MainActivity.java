@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -68,6 +69,8 @@ public class MainActivity extends Activity {
     private static final int SCREEN_APPS = 1;
     private static final int SCREEN_SERVERS = 2;
     private static final int SCREEN_LOGS = 3;
+    private static final int SCREEN_SETTINGS = 4;
+    private static final String PREF_LANGUAGE = "ui_language";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<AppItem> apps = new ArrayList<>();
@@ -78,6 +81,7 @@ public class MainActivity extends Activity {
     private TextView titleView;
     private TextView statusBadge;
     private Button starPowerButton;
+    private Button topLeftButton;
     private Button tabHome;
     private Button tabApps;
     private Button tabServers;
@@ -105,6 +109,26 @@ public class MainActivity extends Activity {
     };
 
     @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(applyLocale(newBase));
+    }
+
+    private static Context applyLocale(Context context) {
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(DnsVpnService.PREFS, MODE_PRIVATE);
+            String code = prefs.getString(PREF_LANGUAGE, "");
+            if (code == null || code.trim().isEmpty() || "system".equals(code)) return context;
+            Locale locale = new Locale(code);
+            Locale.setDefault(locale);
+            Configuration config = new Configuration(context.getResources().getConfiguration());
+            config.setLocale(locale);
+            return context.createConfigurationContext(config);
+        } catch (Exception ignored) {
+            return context;
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initPresets();
@@ -112,7 +136,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.2 profiles debug");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.3 settings debug");
     }
 
     @Override protected void onResume() {
@@ -139,10 +163,10 @@ public class MainActivity extends Activity {
         top.setBackground(makeSolid(0xFF1D2A3A, 0, 0xFF1D2A3A, 0));
         root.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
 
-        Button back = miniButton("‹");
-        back.setTextSize(34);
-        back.setOnClickListener(v -> showScreen(SCREEN_HOME));
-        top.addView(back, new LinearLayout.LayoutParams(dp(64), dp(54)));
+        topLeftButton = miniButton("⚙");
+        topLeftButton.setTextSize(28);
+        topLeftButton.setOnClickListener(v -> { if (currentScreen == SCREEN_HOME) showScreen(SCREEN_SETTINGS); else showScreen(SCREEN_HOME); });
+        top.addView(topLeftButton, new LinearLayout.LayoutParams(dp(64), dp(54)));
 
         titleView = text(getString(R.string.app_name), 24, true, 0xFFFFFFFF);
         titleView.setPadding(dp(14), 0, 0, 0);
@@ -195,9 +219,12 @@ public class MainActivity extends Activity {
         } else if (screen == SCREEN_SERVERS) {
             titleView.setText(getString(R.string.servers));
             contentFrame.addView(scroll(buildServersScreen()));
-        } else {
+        } else if (screen == SCREEN_LOGS) {
             titleView.setText(getString(R.string.logs));
             contentFrame.addView(scroll(buildLogsScreen()));
+        } else {
+            titleView.setText(getString(R.string.settings));
+            contentFrame.addView(scroll(buildSettingsScreen()));
         }
         refreshStatusViews();
     }
@@ -245,6 +272,11 @@ public class MainActivity extends Activity {
         Button logsButton = bigIconButton("◎\n" + getString(R.string.logs));
         logsButton.setOnClickListener(v -> showScreen(SCREEN_LOGS));
         shortcuts.addView(logsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(gap(14, 1));
+
+        Button settingsButton = bigIconButton("⚙\n" + getString(R.string.settings));
+        settingsButton.setOnClickListener(v -> showScreen(SCREEN_SETTINGS));
+        shortcuts.addView(settingsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
 
         hero.addView(space(1, 24));
         LinearLayout connectRow = new LinearLayout(this);
@@ -520,6 +552,73 @@ public class MainActivity extends Activity {
         groupedLogsLayout = vertical();
         root.addView(groupedLogsLayout, matchWrap());
         renderLogsOnly();
+        return root;
+    }
+
+    private View buildSettingsScreen() {
+        LinearLayout root = screenRoot();
+
+        LinearLayout settingsCard = card(0xFF172435, 0xFF34445C);
+        root.addView(settingsCard, matchWrap());
+        settingsCard.addView(text(getString(R.string.settings_title), 22, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.settings_hint), 15, false, 0xFFD5DEEC);
+        hint.setPadding(0, dp(6), 0, dp(12));
+        settingsCard.addView(hint);
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        settingsCard.addView(row1, matchWrap());
+        Button export = primaryButton(getString(R.string.save_all_settings));
+        export.setOnClickListener(v -> exportSettingsToFile());
+        row1.addView(export, new LinearLayout.LayoutParams(0, dp(60), 1));
+        row1.addView(gap(12, 1));
+        Button importBtn = neutralButton(getString(R.string.load_all_settings));
+        importBtn.setOnClickListener(v -> importSettingsFromFile());
+        row1.addView(importBtn, new LinearLayout.LayoutParams(0, dp(60), 1));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(12), 0, 0);
+        settingsCard.addView(row2, matchWrap());
+        Button clear = dangerButton(getString(R.string.clear_cache));
+        clear.setOnClickListener(v -> clearLocalCache());
+        row2.addView(clear, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row2.addView(gap(12, 1));
+        Button cloud = neutralButton(getString(R.string.cloud_beta));
+        cloud.setOnClickListener(v -> toast(getString(R.string.cloud_beta_not_ready)));
+        row2.addView(cloud, new LinearLayout.LayoutParams(0, dp(58), 1));
+
+        TextView cloudHint = text(getString(R.string.cloud_beta_hint), 13, false, 0xFFB8C4D8);
+        cloudHint.setPadding(0, dp(10), 0, 0);
+        settingsCard.addView(cloudHint);
+
+        root.addView(space(1, 16));
+        LinearLayout langCard = card(0xFF101A29, 0xFF303D51);
+        root.addView(langCard, matchWrap());
+        langCard.addView(text(getString(R.string.language), 22, true, 0xFFFFFFFF));
+        TextView langHint = text(getString(R.string.language_hint), 14, false, 0xFFB8C4D8);
+        langHint.setPadding(0, dp(4), 0, dp(12));
+        langCard.addView(langHint);
+
+        String active = getPrefs().getString(PREF_LANGUAGE, "");
+        List<LanguageOption> languages = getLanguageOptions();
+        LinearLayout row = null;
+        for (int i = 0; i < languages.size(); i++) {
+            if (i % 2 == 0) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setPadding(0, i == 0 ? 0 : dp(10), 0, 0);
+                langCard.addView(row, matchWrap());
+            }
+            LanguageOption lang = languages.get(i);
+            boolean selected = (active == null || active.isEmpty()) ? lang.code.equals("system") : active.equals(lang.code);
+            Button b = modeButton((selected ? "✓  " : "") + lang.label, selected);
+            b.setTextSize(13);
+            b.setOnClickListener(v -> setLanguage(lang.code));
+            row.addView(b, new LinearLayout.LayoutParams(0, dp(56), 1));
+            if (i % 2 == 0) row.addView(gap(10, 1));
+        }
+
         return root;
     }
 
@@ -1007,12 +1106,13 @@ public class MainActivity extends Activity {
             SharedPreferences p = getPrefs();
             JSONObject o = new JSONObject();
             o.put("format", "adguard-tv-dns-pro");
-            o.put("version", 32);
+            o.put("version", 33);
             o.put("serverName", p.getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS"));
             o.put("dns1", p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
             o.put("dns2", p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
             o.put("allApps", p.getBoolean(DnsVpnService.PREF_ALL_APPS, true));
             o.put("batterySaver", p.getBoolean(DnsVpnService.PREF_BATTERY_SAVER, true));
+            o.put("language", p.getString(PREF_LANGUAGE, "system"));
             JSONArray selected = new JSONArray();
             for (String pkg : getSelectedApps()) selected.put(pkg);
             o.put("selectedApps", selected);
@@ -1041,6 +1141,7 @@ public class MainActivity extends Activity {
                 .putString(DnsVpnService.PREF_DNS_2, o.optString("dns2", "94.140.15.15"))
                 .putBoolean(DnsVpnService.PREF_ALL_APPS, o.optBoolean("allApps", true))
                 .putBoolean(DnsVpnService.PREF_BATTERY_SAVER, o.optBoolean("batterySaver", true))
+                .putString(PREF_LANGUAGE, o.optString("language", "system"))
                 .putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected)
                 .putStringSet(DnsVpnService.PREF_LOGGING_APPS, logging)
                 .putString(PREF_PROFILES_JSON, profiles == null ? "[]" : profiles.toString())
@@ -1231,6 +1332,67 @@ public class MainActivity extends Activity {
         styleNav(tabApps, currentScreen == SCREEN_APPS);
         styleNav(tabServers, currentScreen == SCREEN_SERVERS);
         styleNav(tabLogs, currentScreen == SCREEN_LOGS);
+        updateTopLeftButton();
+    }
+
+    private void updateTopLeftButton() {
+        if (topLeftButton == null) return;
+        if (currentScreen == SCREEN_HOME) {
+            topLeftButton.setText("⚙");
+            topLeftButton.setTextSize(28);
+            topLeftButton.setContentDescription(getString(R.string.settings));
+        } else {
+            topLeftButton.setText("‹");
+            topLeftButton.setTextSize(34);
+            topLeftButton.setContentDescription(getString(R.string.home));
+        }
+    }
+
+    private List<LanguageOption> getLanguageOptions() {
+        List<LanguageOption> out = new ArrayList<>();
+        out.add(new LanguageOption("system", getString(R.string.language_system)));
+        out.add(new LanguageOption("en", "English"));
+        out.add(new LanguageOption("pl", "Polski"));
+        out.add(new LanguageOption("de", "Deutsch"));
+        out.add(new LanguageOption("fr", "Français"));
+        out.add(new LanguageOption("nl", "Nederlands"));
+        out.add(new LanguageOption("es", "Español"));
+        out.add(new LanguageOption("it", "Italiano"));
+        out.add(new LanguageOption("pt", "Português"));
+        out.add(new LanguageOption("cs", "Čeština"));
+        out.add(new LanguageOption("sk", "Slovenčina"));
+        out.add(new LanguageOption("hu", "Magyar"));
+        out.add(new LanguageOption("ro", "Română"));
+        out.add(new LanguageOption("bg", "Български"));
+        out.add(new LanguageOption("el", "Ελληνικά"));
+        out.add(new LanguageOption("hr", "Hrvatski"));
+        out.add(new LanguageOption("sl", "Slovenščina"));
+        out.add(new LanguageOption("sr", "Srpski"));
+        out.add(new LanguageOption("sq", "Shqip"));
+        out.add(new LanguageOption("da", "Dansk"));
+        out.add(new LanguageOption("sv", "Svenska"));
+        out.add(new LanguageOption("fi", "Suomi"));
+        out.add(new LanguageOption("et", "Eesti"));
+        out.add(new LanguageOption("lv", "Latviešu"));
+        out.add(new LanguageOption("lt", "Lietuvių"));
+        out.add(new LanguageOption("ga", "Gaeilge"));
+        out.add(new LanguageOption("mt", "Malti"));
+        out.add(new LanguageOption("is", "Íslenska"));
+        out.add(new LanguageOption("no", "Norsk"));
+        out.add(new LanguageOption("uk", "Українська"));
+        out.add(new LanguageOption("ru", "Русский"));
+        out.add(new LanguageOption("tr", "Türkçe"));
+        return out;
+    }
+
+    private void setLanguage(String code) {
+        if (code == null || code.trim().isEmpty() || "system".equals(code)) {
+            getPrefs().edit().remove(PREF_LANGUAGE).apply();
+        } else {
+            getPrefs().edit().putString(PREF_LANGUAGE, code).apply();
+        }
+        toast(getString(R.string.language_changed));
+        recreate();
     }
 
     private boolean validateDns(String dns) {
@@ -1419,6 +1581,12 @@ public class MainActivity extends Activity {
         String dns2;
         boolean allApps;
         Set<String> packages = new LinkedHashSet<>();
+    }
+
+    private static class LanguageOption {
+        final String code;
+        final String label;
+        LanguageOption(String code, String label) { this.code = code; this.label = label; }
     }
 
     private static class AppItem {

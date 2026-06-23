@@ -63,7 +63,7 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.2 profiles debug</string>
+    <string name="build_flavor">v3.3 settings debug</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -90,4 +90,16 @@
     <string name="export_failed">Błąd zapisu</string>
     <string name="import_failed">Błąd wczytywania</string>
     <string name="import_not_available">Wybór pliku jest niedostępny</string>
+    <string name="settings_title">Ustawienia programu</string>
+    <string name="settings_hint">Zapisz lub wczytaj pełną konfigurację programu, wyczyść cache i wybierz język aplikacji.</string>
+    <string name="save_all_settings">Zapisz wszystkie ustawienia</string>
+    <string name="load_all_settings">Wczytaj ustawienia</string>
+    <string name="cloud_beta">Zapis do chmury (beta)</string>
+    <string name="cloud_beta_hint">Synchronizacja z chmurą jest zaplanowana na przyszłą wersję. Lokalny eksport/import działa już teraz.</string>
+    <string name="cloud_beta_not_ready">Zapis do chmury nie jest jeszcze gotowy.</string>
+    <string name="language">Język</string>
+    <string name="language_hint">Wybierz język aplikacji. Brakujące tłumaczenia wracają do angielskiego.</string>
+    <string name="language_system">Język systemu</string>
+    <string name="language_changed">Język zmieniony</string>
+
 </resources>

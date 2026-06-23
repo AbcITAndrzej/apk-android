@@ -63,7 +63,7 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.2 profiles debug</string>
+    <string name="build_flavor">v3.3 settings debug</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
@@ -90,4 +90,16 @@
     <string name="export_failed">Export failed</string>
     <string name="import_failed">Import failed</string>
     <string name="import_not_available">Import picker is not available</string>
+    <string name="settings_title">Program settings</string>
+    <string name="settings_hint">Save or load the full program configuration, clear local cache, and choose the app language.</string>
+    <string name="save_all_settings">Save all settings</string>
+    <string name="load_all_settings">Load settings</string>
+    <string name="cloud_beta">Cloud save (beta)</string>
+    <string name="cloud_beta_hint">Cloud sync is planned for a future version. Local export/import works now.</string>
+    <string name="cloud_beta_not_ready">Cloud save is not ready yet.</string>
+    <string name="language">Language</string>
+    <string name="language_hint">Choose the application language. Missing translations fall back to English.</string>
+    <string name="language_system">System language</string>
+    <string name="language_changed">Language changed</string>
+
 </resources>
