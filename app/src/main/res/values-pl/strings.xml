@@ -57,13 +57,13 @@
     <string name="select_mode">Tryb</string>
     <string name="global_log_group">Wszystkie / nieznana aplikacja</string>
     <string name="multi_app_log_group">Grupa wybranych aplikacji</string>
-    <string name="invalid_dns">Wpisz poprawne adresy DNS IPv4.</string>
+    <string name="invalid_dns">Wpisz poprawne adresy DNS IPv4 albo IPv6.</string>
     <string name="no_selected_apps">Zaznacz aplikacje albo przełącz na tryb wszystkich aplikacji.</string>
     <string name="copied">Skopiowano</string>
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.3 settings debug</string>
+    <string name="build_flavor">v3.4 release updater</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -101,5 +101,50 @@
     <string name="language_hint">Wybierz język aplikacji. Brakujące tłumaczenia wracają do angielskiego.</string>
     <string name="language_system">Język systemu</string>
     <string name="language_changed">Język zmieniony</string>
+
+    <string name="theme">Motyw</string>
+    <string name="theme_hint">Wybierz wygląd ciemny, jasny albo systemowy. Profile zostają bez zmian.</string>
+    <string name="theme_system">Systemowy</string>
+    <string name="theme_dark">Ciemny</string>
+    <string name="theme_light">Jasny</string>
+    <string name="startup">Autostart</string>
+    <string name="startup_hint">Opcjonalnie. Po włączeniu Android TV aplikacja może ponownie połączyć DNS VPN według obecnych ustawień albo wybranego profilu.</string>
+    <string name="autostart_on">Autostart TAK</string>
+    <string name="autostart_off">Autostart NIE</string>
+    <string name="autostart_current">Użyj obecnych ustawień</string>
+    <string name="autostart_profile_hint">Profil startowy</string>
+    <string name="network_tools">Narzędzia sieci</string>
+    <string name="network_tools_hint">Dodatkowe opcje stabilności i szybka diagnostyka.</string>
+    <string name="ipv6_dns_on">IPv6 DNS TAK</string>
+    <string name="ipv6_dns_off">IPv6 DNS NIE</string>
+    <string name="tcp_fallback_on">TCP fallback TAK</string>
+    <string name="tcp_fallback_off">TCP fallback NIE</string>
+    <string name="test_dns">Test DNS</string>
+    <string name="testing_dns">Test DNS…</string>
+    <string name="dns_test_ok">Test DNS OK</string>
+    <string name="dns_test_failed">Test DNS nieudany</string>
+    <string name="server">Serwer</string>
+    <string name="open_vpn_settings">Ustawienia VPN</string>
+    <string name="open_settings_failed">Nie udało się otworzyć ustawień</string>
+    <string name="about_app">O aplikacji</string>
+    <string name="version_label">Wersja</string>
+    <string name="check_update">Sprawdź aktualizację</string>
+    <string name="checking_update">Sprawdzam aktualizację…</string>
+    <string name="no_update_available">Brak nowej wersji.</string>
+    <string name="update_check_failed">Nie udało się sprawdzić aktualizacji. GitHub Release może jeszcze nie istnieć.</string>
+    <string name="update_available">Dostępna aktualizacja</string>
+    <string name="update_available_message">Obecna: %1$s
+Najnowsza: %2$s
+Pobrać i otworzyć instalator Androida?</string>
+    <string name="download_update">Pobierz aktualizację</string>
+    <string name="downloading_update">Pobieranie aktualizacji…</string>
+    <string name="update_download_failed">Pobieranie aktualizacji nie powiodło się.</string>
+    <string name="update_downloaded_open_failed">Pobrano, ale Android nie otworzył instalatora.</string>
+    <string name="install_permission_needed">Wymagana zgoda instalacji</string>
+    <string name="install_permission_message">Zezwól tej aplikacji na instalowanie aktualizacji APK, potem sprawdź aktualizację jeszcze raz.</string>
+    <string name="open_settings">Otwórz ustawienia</string>
+    <string name="export_diagnostic_logs">Eksport logów diagnostycznych</string>
+    <string name="logs_exported">Logi diagnostyczne zapisane</string>
+    <string name="always_on_hint">Always-on VPN ustawia się w systemowych ustawieniach VPN Androida. Przycisk powyżej otwiera właściwe miejsce, jeśli firmware TV na to pozwala.</string>
 
 </resources>

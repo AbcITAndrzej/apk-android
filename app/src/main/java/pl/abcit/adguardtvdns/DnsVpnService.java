@@ -12,9 +12,13 @@ import android.os.ParcelFileDescriptor;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -35,6 +39,10 @@ public class DnsVpnService extends VpnService {
     public static final String PREF_SELECTED_APPS = "selected_apps";
     public static final String PREF_LOGGING_APPS = "logging_apps";
     public static final String PREF_BATTERY_SAVER = "battery_saver";
+    public static final String PREF_IPV6_DNS = "ipv6_dns";
+    public static final String PREF_TCP_FALLBACK = "tcp_fallback";
+    public static final String PREF_AUTOSTART = "autostart";
+    public static final String PREF_AUTOSTART_PROFILE = "autostart_profile";
 
     public static final String PREF_RUNNING = "running";
     public static final String PREF_LAST_ERROR = "last_error";
@@ -102,6 +110,8 @@ public class DnsVpnService extends VpnService {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         boolean allApps = prefs.getBoolean(PREF_ALL_APPS, true);
         boolean batterySaver = prefs.getBoolean(PREF_BATTERY_SAVER, true);
+        boolean ipv6Dns = prefs.getBoolean(PREF_IPV6_DNS, false);
+        boolean tcpFallback = prefs.getBoolean(PREF_TCP_FALLBACK, true);
         Set<String> selectedApps = prefs.getStringSet(PREF_SELECTED_APPS, new LinkedHashSet<String>());
         Set<String> loggingApps = prefs.getStringSet(PREF_LOGGING_APPS, new LinkedHashSet<String>());
         String[] upstreamServers = getUpstreamServers();
@@ -134,6 +144,17 @@ public class DnsVpnService extends VpnService {
                     .addAddress(DnsPacketUtils.VPN_ADDRESS, 32)
                     .addRoute(DnsPacketUtils.VIRTUAL_DNS, 32)
                     .addDnsServer(DnsPacketUtils.VIRTUAL_DNS);
+
+            if (ipv6Dns) {
+                try {
+                    builder.addAddress(DnsPacketUtils.VPN_ADDRESS_V6, 128)
+                            .addRoute(DnsPacketUtils.VIRTUAL_DNS_V6, 128)
+                            .addDnsServer(DnsPacketUtils.VIRTUAL_DNS_V6);
+                    DebugLog.log(this, "SYSTEM", "IPv6 virtual DNS enabled: " + DnsPacketUtils.VIRTUAL_DNS_V6);
+                } catch (Exception e) {
+                    DebugLog.log(this, "SYSTEM", "IPv6 virtual DNS could not be enabled: " + e.getClass().getSimpleName());
+                }
+            }
 
             int allowed = 0;
             if (allApps) {
@@ -170,7 +191,7 @@ public class DnsVpnService extends VpnService {
 
             DebugLog.log(this, "SYSTEM", "Server: " + serverName + " / " + upstreamServers[0] + ", " + upstreamServers[1]);
             DebugLog.log(this, "SYSTEM", allApps ? "Mode: all apps" : "Mode: selected apps: " + allowed);
-            DebugLog.log(this, "SYSTEM", "Advanced domain logging: " + (domainLoggingEnabled ? "ON" : "OFF") + ", battery saver: " + (batterySaver ? "ON" : "OFF"));
+            DebugLog.log(this, "SYSTEM", "Advanced domain logging: " + (domainLoggingEnabled ? "ON" : "OFF") + ", battery saver: " + (batterySaver ? "ON" : "OFF") + ", IPv6 DNS: " + (ipv6Dns ? "ON" : "OFF") + ", TCP fallback: " + (tcpFallback ? "ON" : "OFF"));
 
             vpnInterface = builder.establish();
             if (vpnInterface == null) {
@@ -196,7 +217,7 @@ public class DnsVpnService extends VpnService {
             DebugLog.log(this, "SYSTEM", "VPN active. Virtual DNS: " + DnsPacketUtils.VIRTUAL_DNS);
             updateNotification("DNS active: " + serverName);
 
-            vpnThread = new Thread(() -> vpnLoop(upstreamServers, batterySaver), "AdGuardTvDnsLoop");
+            vpnThread = new Thread(() -> vpnLoop(upstreamServers, batterySaver, tcpFallback), "AdGuardTvDnsLoop");
             vpnThread.start();
         } catch (Exception e) {
             String error = e.getClass().getSimpleName() + ": " + safeMessage(e);
@@ -206,7 +227,7 @@ public class DnsVpnService extends VpnService {
         }
     }
 
-    private void vpnLoop(String[] upstreamServers, boolean batterySaver) {
+    private void vpnLoop(String[] upstreamServers, boolean batterySaver, boolean tcpFallback) {
         try (FileInputStream input = new FileInputStream(vpnInterface.getFileDescriptor());
              FileOutputStream output = new FileOutputStream(vpnInterface.getFileDescriptor())) {
             tunOutput = output;
@@ -231,7 +252,7 @@ public class DnsVpnService extends VpnService {
 
                 if (executor != null && !executor.isShutdown()) {
                     int beforeQueue = executor.getQueue().size();
-                    executor.execute(() -> handleDnsRequest(request, upstreamServers, domain));
+                    executor.execute(() -> handleDnsRequest(request, upstreamServers, domain, tcpFallback));
                     if (beforeQueue >= (batterySaver ? 95 : 255)) {
                         droppedQueries.incrementAndGet();
                     }
@@ -254,8 +275,8 @@ public class DnsVpnService extends VpnService {
         }
     }
 
-    private void handleDnsRequest(DnsPacketUtils.DnsRequest request, String[] upstreamServers, String domain) {
-        byte[] dnsResponse = queryUpstream(request.dnsPayload, upstreamServers, domain);
+    private void handleDnsRequest(DnsPacketUtils.DnsRequest request, String[] upstreamServers, String domain, boolean tcpFallback) {
+        byte[] dnsResponse = queryUpstream(request.dnsPayload, upstreamServers, domain, tcpFallback);
         if (dnsResponse == null || dnsResponse.length == 0) {
             dnsFailures.incrementAndGet();
             saveStats(true);
@@ -277,7 +298,7 @@ public class DnsVpnService extends VpnService {
         saveStats(false);
     }
 
-    private byte[] queryUpstream(byte[] dnsPayload, String[] upstreamServers, String domain) {
+    private byte[] queryUpstream(byte[] dnsPayload, String[] upstreamServers, String domain, boolean tcpFallback) {
         for (String server : upstreamServers) {
             if (server == null || server.trim().isEmpty()) continue;
 
@@ -297,8 +318,17 @@ public class DnsVpnService extends VpnService {
                 byte[] buffer = new byte[4096];
                 DatagramPacket response = new DatagramPacket(buffer, buffer.length);
                 socket.receive(response);
-                return Arrays.copyOf(response.getData(), response.getLength());
+                byte[] udpResponse = Arrays.copyOf(response.getData(), response.getLength());
+                if (tcpFallback && DnsPacketUtils.isTruncatedDnsResponse(udpResponse)) {
+                    byte[] tcpResponse = queryUpstreamTcp(dnsPayload, server.trim(), domain);
+                    if (tcpResponse != null && tcpResponse.length > 0) return tcpResponse;
+                }
+                return udpResponse;
             } catch (Exception e) {
+                if (tcpFallback) {
+                    byte[] tcpResponse = queryUpstreamTcp(dnsPayload, server.trim(), domain);
+                    if (tcpResponse != null && tcpResponse.length > 0) return tcpResponse;
+                }
                 long failures = dnsFailures.get();
                 if (failures < 10 || failures % 50 == 0) {
                     DebugLog.log(this, logGroup, "Upstream " + server + " failed for " + domain + ": " + e.getClass().getSimpleName());
@@ -306,6 +336,52 @@ public class DnsVpnService extends VpnService {
             }
         }
         return null;
+    }
+
+
+    private byte[] queryUpstreamTcp(byte[] dnsPayload, String server, String domain) {
+        Socket socket = null;
+        try {
+            InetAddress address = InetAddress.getByName(server);
+            socket = new Socket();
+            boolean protectedSocket = protect(socket);
+            if (!protectedSocket) {
+                DebugLog.log(this, "SYSTEM", "ERROR: protect(tcp socket) returned false for upstream " + server);
+                closeQuietly(socket);
+                return null;
+            }
+            socket.connect(new InetSocketAddress(address, 53), 3500);
+            socket.setSoTimeout(4500);
+            OutputStream out = socket.getOutputStream();
+            out.write((dnsPayload.length >> 8) & 0xFF);
+            out.write(dnsPayload.length & 0xFF);
+            out.write(dnsPayload);
+            out.flush();
+
+            InputStream in = socket.getInputStream();
+            int hi = in.read();
+            int lo = in.read();
+            if (hi < 0 || lo < 0) return null;
+            int len = ((hi & 0xFF) << 8) | (lo & 0xFF);
+            if (len <= 0 || len > 65535) return null;
+            byte[] data = new byte[len];
+            int pos = 0;
+            while (pos < len) {
+                int n = in.read(data, pos, len - pos);
+                if (n < 0) return null;
+                pos += n;
+            }
+            DebugLog.log(this, logGroup, "TCP fallback OK for " + domain + " via " + server);
+            return data;
+        } catch (Exception e) {
+            long failures = dnsFailures.get();
+            if (failures < 10 || failures % 50 == 0) {
+                DebugLog.log(this, logGroup, "TCP upstream " + server + " failed for " + domain + ": " + e.getClass().getSimpleName());
+            }
+            return null;
+        } finally {
+            closeQuietly(socket);
+        }
     }
 
     private void stopVpn(String reason) {
@@ -439,6 +515,11 @@ public class DnsVpnService extends VpnService {
         NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "AdGuard TV DNS Pro", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Local DNS over VPN status");
         manager.createNotificationChannel(channel);
+    }
+
+    private void closeQuietly(Socket socket) {
+        if (socket == null) return;
+        try { socket.close(); } catch (Exception ignored) {}
     }
 
     private void closeQuietly(ParcelFileDescriptor pfd) {

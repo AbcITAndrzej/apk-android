@@ -1,56 +1,72 @@
-# AdGuard TV DNS Pro v3
+# AdGuard TV DNS Pro v3.4
 
-Lekka aplikacja Android / Android TV do ustawiania DNS przez lokalny `VpnService`.
+Lekka aplikacja Android TV / Android do ustawiania DNS przez lokalny `VpnService`.
 
-## Co dodano w v3
+## Wersja v3.4
 
-- ekran Home podobny do aplikacji DNS Changer: aktualny serwer, skróty Apps / Servers / Logs, przełącznik OFF / ON,
-- osobny ekran serwerów DNS z presetami i własnym DNS,
-- osobny ekran aplikacji z ikonami, wyszukiwarką, trybem wszystkie aplikacje / wybrane aplikacje,
-- widoczny focus pod pilota TV: jasna ramka i lekkie powiększenie elementu,
-- przycisk Keyboard, żeby wymusić klawiaturę ekranową na Android TV,
-- logi grupowane: SYSTEM, wszystkie aplikacje, grupa wybranych aplikacji, albo dokładna aplikacja gdy wybrana jest jedna,
-- tryb oszczędny debug ograniczający logowanie i liczbę workerów,
-- podstawowe tłumaczenia PL / EN / DE / FR / NL oraz szkielety locale dla 30 języków/europejskich regionów,
-- brak reklam, brak analityki, brak zewnętrznych SDK.
+Dodane:
 
-## Ważne ograniczenie techniczne
+- podpisywany release APK przez GitHub Actions, gdy ustawisz sekrety podpisu,
+- updater z GitHub Releases: aplikacja sprawdza release, pobiera APK i otwiera instalator Androida,
+- motyw: systemowy / ciemny / jasny,
+- ekran `O aplikacji`, wersja i przycisk `Sprawdź aktualizację`,
+- test DNS z poziomu aplikacji,
+- eksport logów diagnostycznych do pliku,
+- IPv6 virtual DNS jako opcja,
+- TCP DNS fallback jako opcja,
+- autostart po uruchomieniu Android TV jako opcja,
+- ekran pomocniczy do ustawień VPN / Always-on VPN.
 
-Android `VpnService` nie podaje wprost pakietu aplikacji dla każdego pojedynczego pakietu DNS. Dlatego pełne, dokładne logowanie per aplikacja jest wiarygodne wtedy, gdy VPN działa tylko dla jednej wybranej aplikacji. Dla trybu wszystkich aplikacji logi DNS są grupowane jako wszystkie / nieznana aplikacja.
+## Ważne o aktualizacjach
 
-## Build przez GitHub Actions
+Android pozwoli zaktualizować APK tylko wtedy, gdy:
 
-Po wrzuceniu plików do repozytorium GitHub uruchom `Actions -> Build APK`. Artifact będzie miał nazwę:
+1. package name jest taki sam,
+2. `versionCode` jest wyższy,
+3. APK jest podpisane tym samym kluczem.
 
-`adguard-tv-dns-pro-v3-debug-apk`
+Dlatego dla prawdziwych aktualizacji używaj podpisanego `release APK`, nie losowego `debug APK`.
 
-## Domyślny DNS
+## Jak ustawić podpisywanie release APK
 
-- AdGuard DNS: `94.140.14.14`, `94.140.15.15`
+Uruchom:
 
-## Test po instalacji
+```bat
+tools\create-release-keystore.bat
+```
 
-1. Uruchom aplikację.
-2. Wybierz serwer DNS.
-3. Ustaw tryb: wszystkie aplikacje albo wybrane aplikacje.
-4. Kliknij ON / CONNECT.
-5. Zaakceptuj zgodę Android VPN.
-6. Wejdź w Logs i sprawdź, czy rosną `queries` i `responses`.
+Potem dodaj w GitHub repo w `Settings > Secrets and variables > Actions`:
 
+```text
+SIGNING_KEYSTORE_BASE64
+SIGNING_STORE_PASSWORD
+SIGNING_KEY_ALIAS
+SIGNING_KEY_PASSWORD
+```
 
-## v3.3
+Po tym GitHub Actions będzie budować podpisane release APK.
 
-- sortowanie aplikacji: najpierw DNS ON, potem DNS OFF
-- filtry: wszystkie / aplikacje z DNS / aplikacje bez DNS
-- profile: zapis aktualnego DNS + zakresu aplikacji
-- szybkie profile aplikacji z ekranu Start
-- eksport/import ustawień do pliku JSON
+## Jak opublikować release do updatera
 
-Uwaga: Android pozwala mieć jeden aktywny profil VPN naraz. Różne DNS dla różnych aplikacji jednocześnie nie są niezawodne bez roota/systemowych uprawnień, bo zwykły pakiet DNS nie zawiera nazwy aplikacji.
+Po commicie v3.4 i ustawieniu sekretów:
 
+```cmd
+git tag v3.4
+git push origin v3.4
+```
 
-## v3.3 settings debug
-- Gear button on Home opens Settings.
-- Export/import moved to Settings.
-- Language selector added.
-- Cloud save beta placeholder added.
+Workflow utworzy GitHub Release z APK. Przycisk `Sprawdź aktualizację` w aplikacji będzie sprawdzał najnowszy release w repo:
+
+```text
+AbcITAndrzej/apk-android
+```
+
+Jeśli repo jest prywatne, updater nie pobierze release bez tokena. Do publicznego updatera repo albo release musi być publiczne.
+
+## Autostart
+
+Autostart działa tylko po włączeniu opcji w aplikacji. Po starcie TV aplikacja czeka około 15 sekund, potem próbuje uruchomić DNS VPN z obecnymi ustawieniami albo wybranym profilem. Pierwsza zgoda VPN musi być wcześniej zaakceptowana ręcznie.
+
+## Always-on VPN
+
+Always-on VPN ustawia użytkownik w systemowych ustawieniach Androida. Aplikacja ma przycisk do otwarcia ustawień VPN, ale nie wymusza tego po cichu.

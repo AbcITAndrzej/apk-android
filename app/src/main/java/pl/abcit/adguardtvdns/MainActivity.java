@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -61,6 +62,7 @@ public class MainActivity extends Activity {
     private static final int REQ_VPN = 42;
     private static final int REQ_EXPORT_SETTINGS = 70;
     private static final int REQ_IMPORT_SETTINGS = 71;
+    private static final int REQ_EXPORT_LOGS = 72;
     private static final int APP_FILTER_ALL = 0;
     private static final int APP_FILTER_DNS = 1;
     private static final int APP_FILTER_NO_DNS = 2;
@@ -71,6 +73,10 @@ public class MainActivity extends Activity {
     private static final int SCREEN_LOGS = 3;
     private static final int SCREEN_SETTINGS = 4;
     private static final String PREF_LANGUAGE = "ui_language";
+    private static final String PREF_THEME = "ui_theme";
+    private static final String THEME_SYSTEM = "system";
+    private static final String THEME_DARK = "dark";
+    private static final String THEME_LIGHT = "light";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<AppItem> apps = new ArrayList<>();
@@ -136,7 +142,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.3 settings debug");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.4 release updater");
     }
 
     @Override protected void onResume() {
@@ -154,13 +160,13 @@ public class MainActivity extends Activity {
     private View buildRoot() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(makeGradient(0xFF121D2B, 0xFF0A111D));
+        root.setBackground(makeGradient(bgTop(), bgBottom()));
 
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
         top.setPadding(dp(22), dp(14), dp(22), dp(12));
-        top.setBackground(makeSolid(0xFF1D2A3A, 0, 0xFF1D2A3A, 0));
+        top.setBackground(makeSolid(topBarColor(), 0, topBarColor(), 0));
         root.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
 
         topLeftButton = miniButton("⚙");
@@ -184,7 +190,7 @@ public class MainActivity extends Activity {
         bottom.setOrientation(LinearLayout.HORIZONTAL);
         bottom.setGravity(Gravity.CENTER);
         bottom.setPadding(dp(12), dp(10), dp(12), dp(10));
-        bottom.setBackground(makeSolid(0xFF111B28, 0, 0xFF263143, 1));
+        bottom.setBackground(makeSolid(bottomBarColor(), 0, borderColor(), 1));
         root.addView(bottom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(92)));
 
         tabHome = navButton("⌂\n" + getString(R.string.home));
@@ -593,6 +599,18 @@ public class MainActivity extends Activity {
         settingsCard.addView(cloudHint);
 
         root.addView(space(1, 16));
+        root.addView(buildThemeCard(), matchWrap());
+
+        root.addView(space(1, 16));
+        root.addView(buildStartupCard(), matchWrap());
+
+        root.addView(space(1, 16));
+        root.addView(buildNetworkToolsCard(), matchWrap());
+
+        root.addView(space(1, 16));
+        root.addView(buildAboutCard(), matchWrap());
+
+        root.addView(space(1, 16));
         LinearLayout langCard = card(0xFF101A29, 0xFF303D51);
         root.addView(langCard, matchWrap());
         langCard.addView(text(getString(R.string.language), 22, true, 0xFFFFFFFF));
@@ -856,6 +874,8 @@ public class MainActivity extends Activity {
             writeSettingsExport(data.getData());
         } else if (requestCode == REQ_IMPORT_SETTINGS && resultCode == RESULT_OK && data != null && data.getData() != null) {
             readSettingsImport(data.getData());
+        } else if (requestCode == REQ_EXPORT_LOGS && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            writeLogsExport(data.getData());
         }
     }
 
@@ -1106,13 +1126,18 @@ public class MainActivity extends Activity {
             SharedPreferences p = getPrefs();
             JSONObject o = new JSONObject();
             o.put("format", "adguard-tv-dns-pro");
-            o.put("version", 33);
+            o.put("version", 34);
             o.put("serverName", p.getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS"));
             o.put("dns1", p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
             o.put("dns2", p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
             o.put("allApps", p.getBoolean(DnsVpnService.PREF_ALL_APPS, true));
             o.put("batterySaver", p.getBoolean(DnsVpnService.PREF_BATTERY_SAVER, true));
             o.put("language", p.getString(PREF_LANGUAGE, "system"));
+            o.put("theme", p.getString(PREF_THEME, THEME_SYSTEM));
+            o.put("ipv6Dns", p.getBoolean(DnsVpnService.PREF_IPV6_DNS, false));
+            o.put("tcpFallback", p.getBoolean(DnsVpnService.PREF_TCP_FALLBACK, true));
+            o.put("autostart", p.getBoolean(DnsVpnService.PREF_AUTOSTART, false));
+            o.put("autostartProfile", p.getString(DnsVpnService.PREF_AUTOSTART_PROFILE, BootReceiver.PROFILE_CURRENT));
             JSONArray selected = new JSONArray();
             for (String pkg : getSelectedApps()) selected.put(pkg);
             o.put("selectedApps", selected);
@@ -1142,6 +1167,11 @@ public class MainActivity extends Activity {
                 .putBoolean(DnsVpnService.PREF_ALL_APPS, o.optBoolean("allApps", true))
                 .putBoolean(DnsVpnService.PREF_BATTERY_SAVER, o.optBoolean("batterySaver", true))
                 .putString(PREF_LANGUAGE, o.optString("language", "system"))
+                .putString(PREF_THEME, o.optString("theme", THEME_SYSTEM))
+                .putBoolean(DnsVpnService.PREF_IPV6_DNS, o.optBoolean("ipv6Dns", false))
+                .putBoolean(DnsVpnService.PREF_TCP_FALLBACK, o.optBoolean("tcpFallback", true))
+                .putBoolean(DnsVpnService.PREF_AUTOSTART, o.optBoolean("autostart", false))
+                .putString(DnsVpnService.PREF_AUTOSTART_PROFILE, o.optString("autostartProfile", BootReceiver.PROFILE_CURRENT))
                 .putStringSet(DnsVpnService.PREF_SELECTED_APPS, selected)
                 .putStringSet(DnsVpnService.PREF_LOGGING_APPS, logging)
                 .putString(PREF_PROFILES_JSON, profiles == null ? "[]" : profiles.toString())
@@ -1206,6 +1236,11 @@ public class MainActivity extends Activity {
                     .putString(DnsVpnService.PREF_DNS_2, "94.140.15.15")
                     .putBoolean(DnsVpnService.PREF_ALL_APPS, true)
                     .putBoolean(DnsVpnService.PREF_BATTERY_SAVER, true)
+                    .putBoolean(DnsVpnService.PREF_TCP_FALLBACK, true)
+                    .putBoolean(DnsVpnService.PREF_IPV6_DNS, false)
+                    .putBoolean(DnsVpnService.PREF_AUTOSTART, false)
+                    .putString(DnsVpnService.PREF_AUTOSTART_PROFILE, BootReceiver.PROFILE_CURRENT)
+                    .putString(PREF_THEME, THEME_SYSTEM)
                     .apply();
         }
     }
@@ -1395,12 +1430,220 @@ public class MainActivity extends Activity {
         recreate();
     }
 
+
+    private View buildThemeCard() {
+        LinearLayout card = card(0xFF101A29, 0xFF303D51);
+        card.addView(text(getString(R.string.theme), 22, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.theme_hint), 14, false, 0xFFB8C4D8);
+        hint.setPadding(0, dp(4), 0, dp(12));
+        card.addView(hint);
+        String theme = getPrefs().getString(PREF_THEME, THEME_SYSTEM);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(row, matchWrap());
+        Button system = modeButton(getString(R.string.theme_system), THEME_SYSTEM.equals(theme));
+        system.setOnClickListener(v -> setThemeMode(THEME_SYSTEM));
+        row.addView(system, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row.addView(gap(10, 1));
+        Button dark = modeButton(getString(R.string.theme_dark), THEME_DARK.equals(theme));
+        dark.setOnClickListener(v -> setThemeMode(THEME_DARK));
+        row.addView(dark, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row.addView(gap(10, 1));
+        Button light = modeButton(getString(R.string.theme_light), THEME_LIGHT.equals(theme));
+        light.setOnClickListener(v -> setThemeMode(THEME_LIGHT));
+        row.addView(light, new LinearLayout.LayoutParams(0, dp(58), 1));
+        return card;
+    }
+
+    private View buildStartupCard() {
+        LinearLayout card = card(0xFF101A29, 0xFF303D51);
+        card.addView(text(getString(R.string.startup), 22, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.startup_hint), 14, false, 0xFFB8C4D8);
+        hint.setPadding(0, dp(4), 0, dp(12));
+        card.addView(hint);
+        boolean enabled = getPrefs().getBoolean(DnsVpnService.PREF_AUTOSTART, false);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(row, matchWrap());
+        Button autostart = modeButton(enabled ? getString(R.string.autostart_on) : getString(R.string.autostart_off), enabled);
+        autostart.setOnClickListener(v -> { getPrefs().edit().putBoolean(DnsVpnService.PREF_AUTOSTART, !enabled).apply(); showScreen(SCREEN_SETTINGS); });
+        row.addView(autostart, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row.addView(gap(10, 1));
+        Button current = modeButton(getString(R.string.autostart_current), BootReceiver.PROFILE_CURRENT.equals(getPrefs().getString(DnsVpnService.PREF_AUTOSTART_PROFILE, BootReceiver.PROFILE_CURRENT)));
+        current.setOnClickListener(v -> { getPrefs().edit().putString(DnsVpnService.PREF_AUTOSTART_PROFILE, BootReceiver.PROFILE_CURRENT).apply(); showScreen(SCREEN_SETTINGS); });
+        row.addView(current, new LinearLayout.LayoutParams(0, dp(58), 1));
+
+        List<Profile> profiles = readProfiles();
+        if (!profiles.isEmpty()) {
+            TextView pHint = text(getString(R.string.autostart_profile_hint), 14, false, 0xFFB8C4D8);
+            pHint.setPadding(0, dp(12), 0, dp(8));
+            card.addView(pHint);
+            LinearLayout pRow = null;
+            String active = getPrefs().getString(DnsVpnService.PREF_AUTOSTART_PROFILE, BootReceiver.PROFILE_CURRENT);
+            for (int i = 0; i < profiles.size(); i++) {
+                if (i >= 6) break;
+                if (i % 2 == 0) { pRow = new LinearLayout(this); pRow.setOrientation(LinearLayout.HORIZONTAL); pRow.setPadding(0, i == 0 ? 0 : dp(8), 0, 0); card.addView(pRow, matchWrap()); }
+                Profile profile = profiles.get(i);
+                Button b = modeButton((profile.name.equals(active) ? "✓  " : "") + profile.name, profile.name.equals(active));
+                b.setTextSize(13);
+                b.setOnClickListener(v -> { getPrefs().edit().putString(DnsVpnService.PREF_AUTOSTART_PROFILE, profile.name).apply(); showScreen(SCREEN_SETTINGS); });
+                pRow.addView(b, new LinearLayout.LayoutParams(0, dp(54), 1));
+                if (i % 2 == 0) pRow.addView(gap(10, 1));
+            }
+        }
+        return card;
+    }
+
+    private View buildNetworkToolsCard() {
+        LinearLayout card = card(0xFF101A29, 0xFF303D51);
+        card.addView(text(getString(R.string.network_tools), 22, true, 0xFFFFFFFF));
+        TextView hint = text(getString(R.string.network_tools_hint), 14, false, 0xFFB8C4D8);
+        hint.setPadding(0, dp(4), 0, dp(12));
+        card.addView(hint);
+        boolean ipv6 = getPrefs().getBoolean(DnsVpnService.PREF_IPV6_DNS, false);
+        boolean tcp = getPrefs().getBoolean(DnsVpnService.PREF_TCP_FALLBACK, true);
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(row1, matchWrap());
+        Button ipv6Btn = modeButton(ipv6 ? getString(R.string.ipv6_dns_on) : getString(R.string.ipv6_dns_off), ipv6);
+        ipv6Btn.setOnClickListener(v -> { getPrefs().edit().putBoolean(DnsVpnService.PREF_IPV6_DNS, !ipv6).apply(); showScreen(SCREEN_SETTINGS); });
+        row1.addView(ipv6Btn, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row1.addView(gap(10, 1));
+        Button tcpBtn = modeButton(tcp ? getString(R.string.tcp_fallback_on) : getString(R.string.tcp_fallback_off), tcp);
+        tcpBtn.setOnClickListener(v -> { getPrefs().edit().putBoolean(DnsVpnService.PREF_TCP_FALLBACK, !tcp).apply(); showScreen(SCREEN_SETTINGS); });
+        row1.addView(tcpBtn, new LinearLayout.LayoutParams(0, dp(58), 1));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(10), 0, 0);
+        card.addView(row2, matchWrap());
+        Button test = primaryButton(getString(R.string.test_dns));
+        test.setOnClickListener(v -> runDnsTest());
+        row2.addView(test, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row2.addView(gap(10, 1));
+        Button vpnSettings = neutralButton(getString(R.string.open_vpn_settings));
+        vpnSettings.setOnClickListener(v -> openVpnSettings());
+        row2.addView(vpnSettings, new LinearLayout.LayoutParams(0, dp(58), 1));
+        return card;
+    }
+
+    private View buildAboutCard() {
+        LinearLayout card = card(0xFF172435, 0xFF34445C);
+        card.addView(text(getString(R.string.about_app), 22, true, 0xFFFFFFFF));
+        TextView version = text(getString(R.string.version_label) + ": " + getVersionNameSafe(), 15, false, 0xFFD5DEEC);
+        version.setPadding(0, dp(4), 0, dp(12));
+        card.addView(version);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(row, matchWrap());
+        Button update = primaryButton(getString(R.string.check_update));
+        update.setOnClickListener(v -> AppUpdateManager.checkForUpdate(this));
+        row.addView(update, new LinearLayout.LayoutParams(0, dp(58), 1));
+        row.addView(gap(10, 1));
+        Button logs = neutralButton(getString(R.string.export_diagnostic_logs));
+        logs.setOnClickListener(v -> exportLogsToFile());
+        row.addView(logs, new LinearLayout.LayoutParams(0, dp(58), 1));
+        TextView always = text(getString(R.string.always_on_hint), 13, false, 0xFFB8C4D8);
+        always.setPadding(0, dp(10), 0, 0);
+        card.addView(always);
+        return card;
+    }
+
+    private void setThemeMode(String theme) {
+        getPrefs().edit().putString(PREF_THEME, theme == null ? THEME_SYSTEM : theme).apply();
+        recreate();
+    }
+
+    private void runDnsTest() {
+        toast(getString(R.string.testing_dns));
+        SharedPreferences p = getPrefs();
+        String dns1 = p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14");
+        String dns2 = p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15");
+        boolean tcp = p.getBoolean(DnsVpnService.PREF_TCP_FALLBACK, true);
+        new Thread(() -> {
+            DnsDiagnostics.Result result = DnsDiagnostics.test(dns1, dns2, tcp);
+            DebugLog.log(this, "SYSTEM", "DNS test: " + result.detail + " / " + result.server + " / " + result.millis + " ms");
+            runOnUiThread(() -> new AlertDialog.Builder(this)
+                    .setTitle(result.ok ? getString(R.string.dns_test_ok) : getString(R.string.dns_test_failed))
+                    .setMessage(result.detail + "\n" + getString(R.string.server) + ": " + result.server + "\n" + result.millis + " ms")
+                    .setPositiveButton("OK", null)
+                    .show());
+        }, "DnsManualTest").start();
+    }
+
+    private void openVpnSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_VPN_SETTINGS));
+        } catch (Exception e) {
+            toast(getString(R.string.open_settings_failed));
+        }
+    }
+
+    private void exportLogsToFile() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TITLE, "adguard-tv-dns-diagnostic-logs.txt");
+            startActivityForResult(intent, REQ_EXPORT_LOGS);
+        } catch (Exception e) {
+            copyLogToClipboard();
+        }
+    }
+
+    private void writeLogsExport(Uri uri) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+            if (out == null) throw new Exception("No output stream");
+            String content = "AdGuard TV DNS Pro " + getVersionNameSafe() + "\n" + buildStatsText() + "\n\n" + DebugLog.read(this);
+            out.write(content.getBytes(StandardCharsets.UTF_8));
+            toast(getString(R.string.logs_exported));
+        } catch (Exception e) {
+            toast(getString(R.string.export_failed));
+            DebugLog.log(this, "SYSTEM", "Log export failed: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private String getVersionNameSafe() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return getString(R.string.build_flavor); }
+    }
+
+    private boolean isLightTheme() {
+        String theme = getPrefs().getString(PREF_THEME, THEME_SYSTEM);
+        if (THEME_LIGHT.equals(theme)) return true;
+        if (THEME_DARK.equals(theme)) return false;
+        int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return night != Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private int bgTop() { return isLightTheme() ? 0xFFEAF2FD : 0xFF121D2B; }
+    private int bgBottom() { return isLightTheme() ? 0xFFDDE9F8 : 0xFF0A111D; }
+    private int topBarColor() { return isLightTheme() ? 0xFFF7FAFF : 0xFF1D2A3A; }
+    private int bottomBarColor() { return isLightTheme() ? 0xFFF2F7FF : 0xFF111B28; }
+    private int borderColor() { return isLightTheme() ? 0xFFD1DCEC : 0xFF263143; }
+    private int adaptTextColor(int color) {
+        if (!isLightTheme()) return color;
+        if (color == 0xFFFFFFFF || color == 0xFFE8EEF8 || color == 0xFFD5DEEC) return 0xFF102033;
+        if (color == 0xFFB8C4D8 || color == 0xFF8FA3BD || color == 0xFF7D8EA8) return 0xFF526271;
+        return color;
+    }
+
     private boolean validateDns(String dns) {
         if (dns == null) return false;
-        String[] parts = dns.trim().split("\\.");
+        String value = dns.trim();
+        if (value.isEmpty()) return false;
+        if (value.contains(":")) {
+            try {
+                return java.net.InetAddress.getByName(value).getAddress().length == 16;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        if (!value.matches("[0-9.]+")) return false;
+        String[] parts = value.split("\.");
         if (parts.length != 4) return false;
         try {
             for (String part : parts) {
+                if (part.length() == 0) return false;
                 int n = Integer.parseInt(part);
                 if (n < 0 || n > 255) return false;
             }
@@ -1428,7 +1671,9 @@ public class MainActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(18), dp(16), dp(18), dp(16));
-        card.setBackground(makeSolid(color, 22, border, 1));
+        int c = isLightTheme() ? 0xFFF7FAFF : color;
+        int b = isLightTheme() ? 0xFFD6E2F2 : border;
+        card.setBackground(makeSolid(c, 22, b, 1));
         return card;
     }
 
@@ -1436,7 +1681,7 @@ public class MainActivity extends Activity {
         TextView t = new TextView(this);
         t.setText(value == null ? "" : value);
         t.setTextSize(sp);
-        t.setTextColor(color);
+        t.setTextColor(adaptTextColor(color));
         if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         t.setIncludeFontPadding(true);
         return t;
@@ -1456,7 +1701,7 @@ public class MainActivity extends Activity {
         e.setSingleLine(true);
         e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         e.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        if (hintOrValue != null && (hintOrValue.contains(".") && validateMaybeIp(hintOrValue))) {
+        if (hintOrValue != null && validateDns(hintOrValue)) {
             e.setText(hintOrValue);
         } else {
             e.setHint(hintOrValue);
