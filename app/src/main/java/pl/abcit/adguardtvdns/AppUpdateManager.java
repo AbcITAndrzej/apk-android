@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
@@ -31,6 +32,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.UpdateAvailability;
+
 final class AppUpdateManager {
     private static final String REPO = "AbcITAndrzej/apk-android";
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/" + REPO + "/releases/latest";
@@ -40,16 +47,24 @@ final class AppUpdateManager {
     static final String PREF_STARTUP_UPDATE_DISABLED = "startup_update_disabled";
     static final String PREF_STARTUP_UPDATE_SNOOZE_UNTIL = "startup_update_snooze_until";
     private static final long FOURTEEN_DAYS_MS = 14L * 24L * 60L * 60L * 1000L;
+    private static final int PLAY_UPDATE_REQUEST_CODE = 3507;
 
     private AppUpdateManager() {}
 
     static void checkForUpdateOnStartup(Activity activity) {
         if (activity == null) return;
-        if (BuildConfig.PLAY_STORE_BUILD) return;
         SharedPreferences prefs = activity.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE);
         if (prefs.getBoolean(PREF_STARTUP_UPDATE_DISABLED, false)) return;
         long snoozeUntil = prefs.getLong(PREF_STARTUP_UPDATE_SNOOZE_UNTIL, 0L);
         if (snoozeUntil > System.currentTimeMillis()) return;
+
+        if (BuildConfig.PLAY_STORE_BUILD) {
+            // Google Play edition: do not contact GitHub and do not download APK files.
+            // Check Play Store silently on startup and show a prompt only when Google Play reports an update.
+            checkForUpdateViaGooglePlay(activity, false);
+            return;
+        }
+
         showStartupUpdateCheckDialog(activity, prefs);
     }
 
@@ -120,7 +135,7 @@ final class AppUpdateManager {
     static void checkForUpdate(Activity activity) {
         if (activity == null) return;
         if (BuildConfig.PLAY_STORE_BUILD) {
-            showPlayStoreUpdateDialog(activity);
+            checkForUpdateViaGooglePlay(activity, true);
             return;
         }
         Toast.makeText(activity, activity.getString(R.string.checking_update), Toast.LENGTH_SHORT).show();
@@ -175,6 +190,70 @@ final class AppUpdateManager {
         }, "AppUpdateSourceTest").start();
     }
 
+
+    private static void checkForUpdateViaGooglePlay(Activity activity, boolean showNoUpdate) {
+        Toast.makeText(activity, activity.getString(R.string.checking_update), Toast.LENGTH_SHORT).show();
+        try {
+            com.google.android.play.core.appupdate.AppUpdateManager playManager = AppUpdateManagerFactory.create(activity);
+            Task<AppUpdateInfo> updateTask = playManager.getAppUpdateInfo();
+            updateTask.addOnSuccessListener(info -> {
+                if (activity.isFinishing()) return;
+                boolean available = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE;
+                if (available && info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
+                    showPlayStoreUpdateAvailableDialog(activity, playManager, info, AppUpdateType.IMMEDIATE);
+                } else if (available && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
+                    // Flexible updates need completion handling. To keep the TV UI simple and reliable,
+                    // send the user to Google Play if immediate in-app update is not allowed.
+                    showPlayStoreUpdateDialog(activity);
+                } else if (showNoUpdate) {
+                    showPlayStoreNoUpdateDialog(activity);
+                }
+            }).addOnFailureListener(e -> {
+                DebugLog.log(activity, "SYSTEM", "Google Play update check failed: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+                if (showNoUpdate && !activity.isFinishing()) showPlayStoreUpdateDialog(activity);
+            });
+        } catch (Exception e) {
+            DebugLog.log(activity, "SYSTEM", "Google Play update check unavailable: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+            if (showNoUpdate && !activity.isFinishing()) showPlayStoreUpdateDialog(activity);
+        }
+    }
+
+    private static void showPlayStoreUpdateAvailableDialog(Activity activity,
+                                                          com.google.android.play.core.appupdate.AppUpdateManager playManager,
+                                                          AppUpdateInfo info,
+                                                          int updateType) {
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.update_available))
+                .setMessage(activity.getString(R.string.play_store_updates_message))
+                .setPositiveButton(activity.getString(R.string.download_update), (d, w) -> startPlayStoreUpdateFlow(activity, playManager, info, updateType))
+                .setNegativeButton(activity.getString(R.string.cancel), null)
+                .setNeutralButton(activity.getString(R.string.open_google_play), (d, w) -> openPlayStorePage(activity))
+                .show();
+    }
+
+    private static void startPlayStoreUpdateFlow(Activity activity,
+                                                 com.google.android.play.core.appupdate.AppUpdateManager playManager,
+                                                 AppUpdateInfo info,
+                                                 int updateType) {
+        try {
+            playManager.startUpdateFlowForResult(info, updateType, activity, PLAY_UPDATE_REQUEST_CODE);
+        } catch (IntentSender.SendIntentException e) {
+            DebugLog.log(activity, "SYSTEM", "Google Play update flow failed: " + safeMsg(e));
+            showPlayStoreUpdateDialog(activity);
+        } catch (Exception e) {
+            DebugLog.log(activity, "SYSTEM", "Google Play update flow unavailable: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+            showPlayStoreUpdateDialog(activity);
+        }
+    }
+
+    private static void showPlayStoreNoUpdateDialog(Activity activity) {
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.no_update_available))
+                .setMessage(activity.getString(R.string.play_store_updates_message))
+                .setPositiveButton("OK", null)
+                .setNeutralButton(activity.getString(R.string.open_google_play), (d, w) -> openPlayStorePage(activity))
+                .show();
+    }
 
     private static void showPlayStoreUpdateDialog(Activity activity) {
         new AlertDialog.Builder(activity)
