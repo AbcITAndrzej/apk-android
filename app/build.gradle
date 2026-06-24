@@ -16,8 +16,8 @@ android {
         applicationId 'pl.abcit.adguardtvdns'
         minSdk 23
         targetSdk 29
-        versionCode 42
-        versionName '3.5.7-play-updates'
+        versionCode 43
+        versionName '3.5.8-androidx-play-updates'
         resConfigs 'en', 'pl', 'tr', 'de', 'fr', 'es', 'it', 'pt', 'nl', 'ru', 'uk'
     }
 
