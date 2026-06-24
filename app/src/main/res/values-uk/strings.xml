@@ -181,4 +181,8 @@ APK: %4$s
     <string name="startup_update_on">Перевірка під час запуску УВІМК</string>
     <string name="startup_update_off">Перевірка під час запуску ВИМК</string>
     <string name="loading_apps">Завантаження списку програм…</string>
+
+    <string name="play_store_updates_title">Оновлення через Google Play</string>
+    <string name="play_store_updates_message">Ця версія для Google Play не завантажує APK-оновлення з GitHub. Щоб перевірити оновлення, відкрийте сторінку застосунку в Google Play.</string>
+    <string name="open_google_play">Відкрити Google Play</string>
 </resources>

@@ -181,4 +181,8 @@ Der Updater funktioniert. Es gibt einfach keine neuere Version als die installie
     <string name="startup_update_on">Update-Prüfung beim Start AN</string>
     <string name="startup_update_off">Update-Prüfung beim Start AUS</string>
     <string name="loading_apps">App-Liste wird geladen…</string>
+
+    <string name="play_store_updates_title">Updates über Google Play</string>
+    <string name="play_store_updates_message">Diese Play-Store-Version lädt keine APK-Updates von GitHub herunter. Öffne die App-Seite in Google Play, um nach Updates zu suchen.</string>
+    <string name="open_google_play">Google Play öffnen</string>
 </resources>

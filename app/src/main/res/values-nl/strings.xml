@@ -181,4 +181,8 @@ De updater werkt. Er is gewoon geen nieuwere versie dan de geïnstalleerde.</str
     <string name="startup_update_on">Updatecontrole bij opstarten AAN</string>
     <string name="startup_update_off">Updatecontrole bij opstarten UIT</string>
     <string name="loading_apps">App-lijst laden…</string>
+
+    <string name="play_store_updates_title">Updates via Google Play</string>
+    <string name="play_store_updates_message">Deze Play Store-versie downloadt geen APK-updates van GitHub. Open de app-pagina in Google Play om te controleren op updates.</string>
+    <string name="open_google_play">Google Play openen</string>
 </resources>

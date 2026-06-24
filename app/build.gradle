@@ -16,8 +16,8 @@ android {
         applicationId 'pl.abcit.adguardtvdns'
         minSdk 23
         targetSdk 29
-        versionCode 40
-        versionName '3.5.5-full-i18n'
+        versionCode 41
+        versionName '3.5.6-play-aab'
         resConfigs 'en', 'pl', 'tr', 'de', 'fr', 'es', 'it', 'pt', 'nl', 'ru', 'uk'
     }
 
@@ -29,6 +29,21 @@ android {
                 keyAlias System.getenv('SIGNING_KEY_ALIAS')
                 keyPassword System.getenv('SIGNING_KEY_PASSWORD')
             }
+        }
+    }
+
+    flavorDimensions 'distribution'
+
+    productFlavors {
+        github {
+            dimension 'distribution'
+            buildConfigField 'boolean', 'PLAY_STORE_BUILD', 'false'
+        }
+
+        play {
+            dimension 'distribution'
+            targetSdk 35
+            buildConfigField 'boolean', 'PLAY_STORE_BUILD', 'true'
         }
     }
 
@@ -48,13 +63,16 @@ android {
         }
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    // GitHub sideload release: this project is not published to Google Play.
-    // Keep targetSdk 29 for Android TV 10/VPN compatibility and disable only the Play target-SDK lint gate.
+    // GitHub flavor keeps sideload updater compatibility. Play flavor targets Google Play requirements.
     lint {
         disable 'ExpiredTargetSdkVersion'
         checkReleaseBuilds false

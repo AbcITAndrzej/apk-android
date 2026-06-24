@@ -181,4 +181,8 @@ El actualizador funciona. Simplemente no hay una versión más nueva que la inst
     <string name="startup_update_on">Actualización al inicio ON</string>
     <string name="startup_update_off">Actualización al inicio OFF</string>
     <string name="loading_apps">Cargando lista de apps…</string>
+
+    <string name="play_store_updates_title">Actualizaciones mediante Google Play</string>
+    <string name="play_store_updates_message">Esta versión de Play Store no descarga actualizaciones APK desde GitHub. Para buscar actualizaciones, abre la página de la app en Google Play.</string>
+    <string name="open_google_play">Abrir Google Play</string>
 </resources>

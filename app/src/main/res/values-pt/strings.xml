@@ -181,4 +181,8 @@ O updater funciona. Simplesmente não há versão mais nova do que a instalada.<
     <string name="startup_update_on">Verificação ao iniciar ON</string>
     <string name="startup_update_off">Verificação ao iniciar OFF</string>
     <string name="loading_apps">A carregar lista de apps…</string>
+
+    <string name="play_store_updates_title">Atualizações pelo Google Play</string>
+    <string name="play_store_updates_message">Esta versão da Play Store não baixa atualizações APK do GitHub. Para verificar atualizações, abra a página do app no Google Play.</string>
+    <string name="open_google_play">Abrir Google Play</string>
 </resources>

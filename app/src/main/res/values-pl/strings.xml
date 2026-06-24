@@ -184,4 +184,8 @@ Updater działa. Po prostu nie ma nowszej wersji niż zainstalowana.</string>
     <string name="startup_update_on">Sprawdzanie aktualizacji na starcie TAK</string>
     <string name="startup_update_off">Sprawdzanie aktualizacji na starcie NIE</string>
     <string name="loading_apps">Ładuję listę aplikacji…</string>
+
+    <string name="play_store_updates_title">Aktualizacje przez Google Play</string>
+    <string name="play_store_updates_message">Ta wersja ze Sklepu Play nie pobiera aktualizacji APK z GitHuba. Aby sprawdzić aktualizację, otwórz stronę aplikacji w Google Play.</string>
+    <string name="open_google_play">Otwórz Google Play</string>
 </resources>

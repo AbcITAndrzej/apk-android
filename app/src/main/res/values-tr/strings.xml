@@ -182,4 +182,8 @@ Güncelleyici çalışıyor. Kurulu sürümden daha yeni bir sürüm yok.</strin
     <string name="startup_update_on">Başlangıç güncelleme kontrolü AÇIK</string>
     <string name="startup_update_off">Başlangıç güncelleme kontrolü KAPALI</string>
     <string name="loading_apps">Uygulama listesi yükleniyor…</string>
+
+    <string name="play_store_updates_title">Google Play üzerinden güncellemeler</string>
+    <string name="play_store_updates_message">Bu Play Store sürümü GitHub\'dan APK güncellemeleri indirmez. Güncellemeleri kontrol etmek için uygulama sayfasını Google Play\'de açın.</string>
+    <string name="open_google_play">Google Play\'i aç</string>
 </resources>

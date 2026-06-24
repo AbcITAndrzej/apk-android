@@ -181,4 +181,8 @@ APK: %4$s
     <string name="startup_update_on">Проверка при запуске ВКЛ</string>
     <string name="startup_update_off">Проверка при запуске ВЫКЛ</string>
     <string name="loading_apps">Загрузка списка приложений…</string>
+
+    <string name="play_store_updates_title">Обновления через Google Play</string>
+    <string name="play_store_updates_message">Эта версия для Google Play не загружает APK-обновления с GitHub. Чтобы проверить обновления, откройте страницу приложения в Google Play.</string>
+    <string name="open_google_play">Открыть Google Play</string>
 </resources>

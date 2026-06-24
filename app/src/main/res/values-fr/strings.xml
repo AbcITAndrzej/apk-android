@@ -181,4 +181,8 @@ Le système de mise à jour fonctionne. Il n’y a simplement pas de version plu
     <string name="startup_update_on">Vérification au démarrage ON</string>
     <string name="startup_update_off">Vérification au démarrage OFF</string>
     <string name="loading_apps">Chargement de la liste des applications…</string>
+
+    <string name="play_store_updates_title">Mises à jour via Google Play</string>
+    <string name="play_store_updates_message">Cette version Play Store ne télécharge pas de mises à jour APK depuis GitHub. Pour vérifier les mises à jour, ouvrez la page de l’application dans Google Play.</string>
+    <string name="open_google_play">Ouvrir Google Play</string>
 </resources>

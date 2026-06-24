@@ -35,6 +35,8 @@ final class AppUpdateManager {
     private static final String REPO = "AbcITAndrzej/apk-android";
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/" + REPO + "/releases/latest";
     private static final String RELEASES_PAGE_URL = "https://github.com/" + REPO + "/releases";
+    private static final String PLAY_STORE_WEB_URL = "https://play.google.com/store/apps/details?id=" + BuildConfig.APPLICATION_ID;
+    private static final String PLAY_STORE_MARKET_URL = "market://details?id=" + BuildConfig.APPLICATION_ID;
     static final String PREF_STARTUP_UPDATE_DISABLED = "startup_update_disabled";
     static final String PREF_STARTUP_UPDATE_SNOOZE_UNTIL = "startup_update_snooze_until";
     private static final long FOURTEEN_DAYS_MS = 14L * 24L * 60L * 60L * 1000L;
@@ -43,6 +45,7 @@ final class AppUpdateManager {
 
     static void checkForUpdateOnStartup(Activity activity) {
         if (activity == null) return;
+        if (BuildConfig.PLAY_STORE_BUILD) return;
         SharedPreferences prefs = activity.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE);
         if (prefs.getBoolean(PREF_STARTUP_UPDATE_DISABLED, false)) return;
         long snoozeUntil = prefs.getLong(PREF_STARTUP_UPDATE_SNOOZE_UNTIL, 0L);
@@ -116,6 +119,10 @@ final class AppUpdateManager {
 
     static void checkForUpdate(Activity activity) {
         if (activity == null) return;
+        if (BuildConfig.PLAY_STORE_BUILD) {
+            showPlayStoreUpdateDialog(activity);
+            return;
+        }
         Toast.makeText(activity, activity.getString(R.string.checking_update), Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
@@ -138,6 +145,10 @@ final class AppUpdateManager {
 
     static void testReleaseSource(Activity activity) {
         if (activity == null) return;
+        if (BuildConfig.PLAY_STORE_BUILD) {
+            showPlayStoreUpdateDialog(activity);
+            return;
+        }
         Toast.makeText(activity, activity.getString(R.string.testing_update_source), Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
@@ -162,6 +173,32 @@ final class AppUpdateManager {
                 activity.runOnUiThread(() -> showUpdateErrorDialog(activity, e));
             }
         }, "AppUpdateSourceTest").start();
+    }
+
+
+    private static void showPlayStoreUpdateDialog(Activity activity) {
+        new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.play_store_updates_title))
+                .setMessage(activity.getString(R.string.play_store_updates_message))
+                .setPositiveButton(activity.getString(R.string.open_google_play), (d, w) -> openPlayStorePage(activity))
+                .setNegativeButton("OK", null)
+                .show();
+    }
+
+    private static void openPlayStorePage(Activity activity) {
+        try {
+            Intent market = new Intent(Intent.ACTION_VIEW, Uri.parse(PLAY_STORE_MARKET_URL));
+            market.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.startActivity(market);
+        } catch (Exception e) {
+            try {
+                Intent web = new Intent(Intent.ACTION_VIEW, Uri.parse(PLAY_STORE_WEB_URL));
+                web.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                activity.startActivity(web);
+            } catch (Exception ignored) {
+                Toast.makeText(activity, PLAY_STORE_WEB_URL, Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private static void showUpdateDialog(Activity activity, ReleaseInfo info, String current) {

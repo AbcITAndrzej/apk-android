@@ -38,14 +38,24 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Read app version from Gradle
+        id: app_version
+        run: |
+          VERSION_CODE=$(grep -E "^[[:space:]]*versionCode[[:space:]]+[0-9]+" app/build.gradle | head -n 1 | awk '{print $2}')
+          VERSION_NAME=$(grep -E "^[[:space:]]*versionName[[:space:]]+['\"]" app/build.gradle | head -n 1 | sed -E "s/.*versionName[[:space:]]+['\"]([^'\"]+)['\"].*/\1/")
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "versionCode=$VERSION_CODE"
+          echo "versionName=$VERSION_NAME"
 
-      - name: Upload debug APK
+      - name: Build GitHub debug APK
+        run: gradle assembleGithubDebug --no-daemon
+
+      - name: Upload GitHub debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: adguard-tv-dns-pro-v3-5-2-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: tv-dns-switcher-github-debug-apk
+          path: app/build/outputs/apk/github/debug/*.apk
 
       - name: Decode release keystore
         if: ${{ env.HAS_RELEASE_SIGNING == 'true' }}
@@ -54,39 +64,35 @@ jobs:
         run: |
           echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > app/release.keystore
 
-      - name: Build signed release APK
+      - name: Build signed GitHub release APK
         if: ${{ env.HAS_RELEASE_SIGNING == 'true' }}
         env:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: gradle assembleRelease --no-daemon
+        run: gradle assembleGithubRelease --no-daemon
 
-      - name: Upload signed release APK
+      - name: Upload signed GitHub release APK
         if: ${{ env.HAS_RELEASE_SIGNING == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: adguard-tv-dns-pro-v3-5-2-release-signed-apk
-          path: app/build/outputs/apk/release/*.apk
+          name: tv-dns-switcher-github-release-signed-apk
+          path: app/build/outputs/apk/github/release/*.apk
 
       - name: Publish GitHub Release on tag
         if: ${{ startsWith(github.ref, 'refs/tags/v') && env.HAS_RELEASE_SIGNING == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
-          VERSION_CODE=$(grep -m1 "versionCode" app/build.gradle | awk '{print $2}')
-          VERSION_NAME=$(sed -n "s/.*versionName ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)
-          SAFE_VERSION_NAME=$(echo "$VERSION_NAME" | tr -c 'A-Za-z0-9._-' '_')
-          OUT_APK="AdGuard-TV-DNS-Pro-${SAFE_VERSION_NAME}-${GITHUB_REF_NAME}.apk"
-          cp "$APK" "$OUT_APK"
+          APK=$(ls app/build/outputs/apk/github/release/*.apk | head -n 1)
+          OUT="TV-DNS-Switcher-${GITHUB_REF_NAME}.apk"
+          cp "$APK" "$OUT"
           cat > release-notes.txt <<NOTES
-          versionCode:${VERSION_CODE}
-          versionName:${VERSION_NAME}
+          versionCode:${{ steps.app_version.outputs.version_code }}
+          versionName:${{ steps.app_version.outputs.version_name }}
           signed:true
-          channel:release
-          tag:${GITHUB_REF_NAME}
+          channel:github-apk
           NOTES
-          gh release create "$GITHUB_REF_NAME" "$OUT_APK" \
-            --title "AdGuard TV DNS Pro ${GITHUB_REF_NAME}" \
+          gh release create "$GITHUB_REF_NAME" "$OUT" \
+            --title "TV DNS Switcher ${GITHUB_REF_NAME}" \
             --notes-file release-notes.txt
