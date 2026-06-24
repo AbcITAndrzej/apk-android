@@ -63,7 +63,7 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.5.2 updater UI fix</string>
+    <string name="build_flavor">v3.5.3 startup update TV fix</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -175,4 +175,13 @@ APK: %4$s
 Updater działa. Po prostu nie ma nowszej wersji niż zainstalowana.</string>
     <string name="light_theme_fixed">Poprawiono czytelność jasnego motywu</string>
     <string name="download_update_test">Pobierz najnowsze APK testowo</string>
+    <string name="startup_update_title">Sprawdzanie wersji aplikacji</string>
+    <string name="startup_update_checking_message">Sprawdzam, czy jest najnowsza wersja…</string>
+    <string name="startup_update_snooze_14_days">Nie przypominaj przez 14 dni</string>
+    <string name="startup_update_disable">Nie sprawdzaj na starcie aktualizacji</string>
+    <string name="startup_update_latest_message">Masz już najnowszą wersję: %1$s</string>
+    <string name="startup_update_failed_message">Nie udało się teraz sprawdzić aktualizacji. Powód: %1$s</string>
+    <string name="startup_update_on">Sprawdzanie aktualizacji na starcie TAK</string>
+    <string name="startup_update_off">Sprawdzanie aktualizacji na starcie NIE</string>
+    <string name="loading_apps">Ładuję listę aplikacji…</string>
 </resources>

@@ -7,11 +7,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
+import android.view.Gravity;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -30,8 +35,84 @@ final class AppUpdateManager {
     private static final String REPO = "AbcITAndrzej/apk-android";
     private static final String LATEST_RELEASE_URL = "https://api.github.com/repos/" + REPO + "/releases/latest";
     private static final String RELEASES_PAGE_URL = "https://github.com/" + REPO + "/releases";
+    static final String PREF_STARTUP_UPDATE_DISABLED = "startup_update_disabled";
+    static final String PREF_STARTUP_UPDATE_SNOOZE_UNTIL = "startup_update_snooze_until";
+    private static final long FOURTEEN_DAYS_MS = 14L * 24L * 60L * 60L * 1000L;
 
     private AppUpdateManager() {}
+
+    static void checkForUpdateOnStartup(Activity activity) {
+        if (activity == null) return;
+        SharedPreferences prefs = activity.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE);
+        if (prefs.getBoolean(PREF_STARTUP_UPDATE_DISABLED, false)) return;
+        long snoozeUntil = prefs.getLong(PREF_STARTUP_UPDATE_SNOOZE_UNTIL, 0L);
+        if (snoozeUntil > System.currentTimeMillis()) return;
+        showStartupUpdateCheckDialog(activity, prefs);
+    }
+
+    private static void showStartupUpdateCheckDialog(Activity activity, SharedPreferences prefs) {
+        int pad = dp(activity, 18);
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(pad, dp(activity, 8), pad, 0);
+
+        TextView message = new TextView(activity);
+        message.setText(activity.getString(R.string.startup_update_checking_message));
+        message.setTextSize(16);
+        message.setGravity(Gravity.START);
+        box.addView(message, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        CheckBox snooze = new CheckBox(activity);
+        snooze.setText(activity.getString(R.string.startup_update_snooze_14_days));
+        snooze.setPadding(0, dp(activity, 12), 0, 0);
+        box.addView(snooze, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        CheckBox disable = new CheckBox(activity);
+        disable.setText(activity.getString(R.string.startup_update_disable));
+        disable.setPadding(0, dp(activity, 4), 0, 0);
+        box.addView(disable, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        snooze.setOnCheckedChangeListener((buttonView, checked) -> {
+            SharedPreferences.Editor editor = prefs.edit();
+            if (checked) editor.putLong(PREF_STARTUP_UPDATE_SNOOZE_UNTIL, System.currentTimeMillis() + FOURTEEN_DAYS_MS);
+            else editor.remove(PREF_STARTUP_UPDATE_SNOOZE_UNTIL);
+            editor.apply();
+        });
+        disable.setOnCheckedChangeListener((buttonView, checked) -> prefs.edit().putBoolean(PREF_STARTUP_UPDATE_DISABLED, checked).apply());
+
+        AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle(activity.getString(R.string.startup_update_title))
+                .setView(box)
+                .setNegativeButton(activity.getString(R.string.cancel), null)
+                .show();
+
+        new Thread(() -> {
+            try {
+                ReleaseInfo info = fetchLatestRelease();
+                VersionInfo current = getCurrentVersion(activity);
+                boolean newer = isNewer(current, info);
+                activity.runOnUiThread(() -> {
+                    if (activity.isFinishing()) return;
+                    if (newer) {
+                        try { if (dialog.isShowing()) dialog.dismiss(); } catch (Exception ignored) {}
+                        showUpdateDialog(activity, info, current.displayName());
+                    } else if (dialog.isShowing()) {
+                        message.setText(activity.getString(R.string.startup_update_latest_message, current.displayName()));
+                        try { dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("OK"); } catch (Exception ignored) {}
+                    }
+                });
+            } catch (Exception e) {
+                DebugLog.log(activity, "SYSTEM", "Startup update check failed: " + e.getClass().getSimpleName() + ": " + safeMsg(e));
+                activity.runOnUiThread(() -> {
+                    if (activity.isFinishing()) return;
+                    if (dialog.isShowing()) {
+                        message.setText(activity.getString(R.string.startup_update_failed_message, safeMsg(e)));
+                        try { dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("OK"); } catch (Exception ignored) {}
+                    }
+                });
+            }
+        }, "StartupUpdateCheck").start();
+    }
 
     static void checkForUpdate(Activity activity) {
         if (activity == null) return;
@@ -312,6 +393,10 @@ final class AppUpdateManager {
         } catch (Exception e) {
             Toast.makeText(activity, activity.getString(R.string.open_settings_failed), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static int dp(Context context, int value) {
+        return (int) (value * context.getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private static String readAll(InputStream in) throws Exception {

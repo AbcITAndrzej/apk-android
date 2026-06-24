@@ -63,7 +63,7 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.5.2 updater UI fix</string>
+    <string name="build_flavor">v3.5.3 startup update TV fix</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
@@ -175,4 +175,13 @@ APK: %4$s
 The updater works. There is simply no newer version than the one installed.</string>
     <string name="light_theme_fixed">Light theme readability improved</string>
     <string name="download_update_test">Download latest APK (test)</string>
+    <string name="startup_update_title">Checking app version</string>
+    <string name="startup_update_checking_message">Checking if this is the latest version…</string>
+    <string name="startup_update_snooze_14_days">Do not remind me for 14 days</string>
+    <string name="startup_update_disable">Do not check updates on startup</string>
+    <string name="startup_update_latest_message">You already have the latest version: %1$s</string>
+    <string name="startup_update_failed_message">Could not check updates now. Reason: %1$s</string>
+    <string name="startup_update_on">Startup update check ON</string>
+    <string name="startup_update_off">Startup update check OFF</string>
+    <string name="loading_apps">Loading app list…</string>
 </resources>

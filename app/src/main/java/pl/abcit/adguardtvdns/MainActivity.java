@@ -82,6 +82,8 @@ public class MainActivity extends Activity {
     private final List<AppItem> apps = new ArrayList<>();
     private final Map<String, String> appLabels = new LinkedHashMap<>();
     private final List<ServerPreset> presets = new ArrayList<>();
+    private boolean appsLoaded = false;
+    private boolean appsLoading = false;
 
     private FrameLayout contentFrame;
     private TextView titleView;
@@ -139,10 +141,11 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         initPresets();
         ensureDefaultSettings();
-        loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.5.2 updater UI fix");
+        handler.postDelayed(this::loadAppsAsync, 250);
+        handler.postDelayed(() -> AppUpdateManager.checkForUpdateOnStartup(this), 650);
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.5.3 startup update TV fix");
     }
 
     @Override protected void onResume() {
@@ -221,6 +224,7 @@ public class MainActivity extends Activity {
             contentFrame.addView(scroll(buildHomeScreen()));
         } else if (screen == SCREEN_APPS) {
             titleView.setText(getString(R.string.apps));
+            loadAppsAsync();
             contentFrame.addView(scroll(buildAppsScreen()));
         } else if (screen == SCREEN_SERVERS) {
             titleView.setText(getString(R.string.servers));
@@ -404,7 +408,7 @@ public class MainActivity extends Activity {
         appSearchInput.setSingleLine(true);
         appSearchInput.setText(appFilter);
         appSearchInput.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
-        appSearchInput.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) showKeyboard(appSearchInput); });
+        appSearchInput.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus && !isTvMode()) showKeyboard(appSearchInput); });
         appSearchInput.setOnClickListener(v -> showKeyboard(appSearchInput));
         appSearchInput.setOnEditorActionListener((v, actionId, event) -> {
             boolean searchAction = actionId == EditorInfo.IME_ACTION_SEARCH || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
@@ -645,6 +649,14 @@ public class MainActivity extends Activity {
     private void renderAppList() {
         if (appListLayout == null) return;
         appListLayout.removeAllViews();
+        if (!appsLoaded) {
+            if (appCounterText != null) appCounterText.setText(getString(R.string.loading_apps));
+            TextView loading = text(getString(R.string.loading_apps), 16, false, 0xFFFFFFFF);
+            loading.setPadding(dp(12), dp(18), dp(12), dp(18));
+            appListLayout.addView(loading, matchWrap());
+            loadAppsAsync();
+            return;
+        }
         Set<String> selected = getSelectedApps();
         Set<String> logging = getLoggingApps();
         boolean allApps = isAllAppsMode();
@@ -1250,27 +1262,45 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void loadApps() {
-        apps.clear();
-        appLabels.clear();
-        PackageManager pm = getPackageManager();
-        List<ApplicationInfo> installed = pm.getInstalledApplications(0);
-        for (ApplicationInfo info : installed) {
-            if (info == null || info.packageName == null) continue;
-            if (info.packageName.equals(getPackageName())) continue;
-            Intent launch = pm.getLaunchIntentForPackage(info.packageName);
-            if (launch == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                launch = pm.getLeanbackLaunchIntentForPackage(info.packageName);
+    private void loadAppsAsync() {
+        if (appsLoaded || appsLoading) return;
+        appsLoading = true;
+        new Thread(() -> {
+            final List<AppItem> loadedApps = new ArrayList<>();
+            final Map<String, String> loadedLabels = new LinkedHashMap<>();
+            try {
+                PackageManager pm = getPackageManager();
+                List<ApplicationInfo> installed = pm.getInstalledApplications(0);
+                for (ApplicationInfo info : installed) {
+                    if (info == null || info.packageName == null) continue;
+                    if (info.packageName.equals(getPackageName())) continue;
+                    Intent launch = pm.getLaunchIntentForPackage(info.packageName);
+                    if (launch == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        launch = pm.getLeanbackLaunchIntentForPackage(info.packageName);
+                    }
+                    if (launch == null) continue;
+                    String label;
+                    try { label = String.valueOf(pm.getApplicationLabel(info)); } catch (Exception e) { label = info.packageName; }
+                    Drawable icon = null;
+                    try { icon = pm.getApplicationIcon(info.packageName); } catch (Exception ignored) {}
+                    loadedApps.add(new AppItem(label, info.packageName, icon));
+                    loadedLabels.put(info.packageName, label);
+                }
+                Collections.sort(loadedApps, Comparator.comparing(a -> a.label.toLowerCase(Locale.US)));
+            } catch (Exception e) {
+                DebugLog.log(this, "SYSTEM", "Apps scan failed: " + e.getClass().getSimpleName());
             }
-            if (launch == null) continue;
-            String label;
-            try { label = String.valueOf(pm.getApplicationLabel(info)); } catch (Exception e) { label = info.packageName; }
-            Drawable icon = null;
-            try { icon = pm.getApplicationIcon(info.packageName); } catch (Exception ignored) {}
-            apps.add(new AppItem(label, info.packageName, icon));
-            appLabels.put(info.packageName, label);
-        }
-        Collections.sort(apps, Comparator.comparing(a -> a.label.toLowerCase(Locale.US)));
+            runOnUiThread(() -> {
+                apps.clear();
+                apps.addAll(loadedApps);
+                appLabels.clear();
+                appLabels.putAll(loadedLabels);
+                appsLoaded = true;
+                appsLoading = false;
+                DebugLog.log(this, "SYSTEM", "Apps loaded: " + apps.size());
+                if (currentScreen == SCREEN_APPS) renderAppList();
+            });
+        }, "AppListLoader").start();
     }
 
     private void selectServer(ServerPreset preset) {
@@ -1566,6 +1596,22 @@ public class MainActivity extends Activity {
         testSource.setOnClickListener(v -> AppUpdateManager.testReleaseSource(this));
         row2.addView(testSource, new LinearLayout.LayoutParams(0, dp(58), 1));
 
+        LinearLayout row3 = new LinearLayout(this);
+        row3.setOrientation(LinearLayout.HORIZONTAL);
+        row3.setPadding(0, dp(10), 0, 0);
+        card.addView(row3, matchWrap());
+        boolean startupUpdateDisabled = getPrefs().getBoolean(AppUpdateManager.PREF_STARTUP_UPDATE_DISABLED, false);
+        Button startupUpdate = neutralButton(startupUpdateDisabled ? getString(R.string.startup_update_off) : getString(R.string.startup_update_on));
+        startupUpdate.setOnClickListener(v -> {
+            boolean disabled = getPrefs().getBoolean(AppUpdateManager.PREF_STARTUP_UPDATE_DISABLED, false);
+            getPrefs().edit()
+                    .putBoolean(AppUpdateManager.PREF_STARTUP_UPDATE_DISABLED, !disabled)
+                    .remove(AppUpdateManager.PREF_STARTUP_UPDATE_SNOOZE_UNTIL)
+                    .apply();
+            showScreen(SCREEN_SETTINGS);
+        });
+        row3.addView(startupUpdate, new LinearLayout.LayoutParams(0, dp(58), 1));
+
         TextView always = text(getString(R.string.always_on_hint), 13, false, 0xFFB8C4D8);
         always.setPadding(0, dp(10), 0, 0);
         card.addView(always);
@@ -1743,6 +1789,7 @@ public class MainActivity extends Activity {
         e.setSelectAllOnFocus(false);
         e.setFocusable(true);
         e.setFocusableInTouchMode(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) e.setShowSoftInputOnFocus(!isTvMode());
         e.setBackground(makeSolid(isLightTheme() ? 0xFFFFFFFF : 0xFF08111D, 14, isLightTheme() ? 0xFF9AB6D8 : 0xFF476D9B, 2));
         e.setOnClickListener(v -> showKeyboard(e));
         return e;
@@ -1835,11 +1882,13 @@ public class MainActivity extends Activity {
         editText.postDelayed(() -> {
             editText.requestFocus();
             InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(editText, InputMethodManager.SHOW_FORCED);
-                editText.postDelayed(() -> imm.showSoftInput(editText, InputMethodManager.SHOW_FORCED), 250);
-            }
-        }, 120);
+            if (imm != null) imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+        }, 80);
+    }
+
+    private boolean isTvMode() {
+        int type = getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK;
+        return type == Configuration.UI_MODE_TYPE_TELEVISION || getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
     }
 
     private void hideKeyboard(TextView view) {
