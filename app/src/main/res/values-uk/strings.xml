@@ -1,19 +1,184 @@
 <resources>
     <string name="app_name">AdGuard TV DNS Pro</string>
-    <string name="home">Home</string>
-    <string name="apps">Apps</string>
-    <string name="servers">Servers</string>
-    <string name="logs">Logs</string>
-    <string name="connect">CONNECT</string>
-    <string name="stop">STOP</string>
-    <string name="on">ON</string>
-    <string name="off">OFF</string>
-    <string name="all_apps">All apps</string>
-    <string name="selected_apps">Selected apps</string>
-    <string name="search_apps">Search apps…</string>
-    <string name="active">ACTIVE</string>
-    <string name="inactive">INACTIVE</string>
-    <string name="clear_cache">Clear app cache / logs</string>
-    <string name="cache_cleared">App cache and logs cleared</string>
-    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
+    <string name="home">Головна</string>
+    <string name="apps">Програми</string>
+    <string name="servers">Сервери</string>
+    <string name="logs">Журнали</string>
+    <string name="settings">Налаштування</string>
+    <string name="connect">ПІДКЛЮЧИТИ</string>
+    <string name="stop">СТОП</string>
+    <string name="on">УВІМК</string>
+    <string name="off">ВИМК</string>
+    <string name="current_server">Поточний сервер</string>
+    <string name="current_mode">Поточний режим</string>
+    <string name="all_apps">Усі програми</string>
+    <string name="selected_apps">Вибрані програми</string>
+    <string name="selected_apps_count">Вибрані програми: %1$d</string>
+    <string name="dns_on_for_all">DNS увімкнено для всіх програм</string>
+    <string name="choose_apps_hint">Виберіть, які програми мають використовувати вибраний DNS-сервер. Розширене журналювання можна ввімкнути для кожної програми, але точна прив’язка DNS до програми надійна лише коли вибрано одну програму.</string>
+    <string name="search_apps">Пошук програм…</string>
+    <string name="show_keyboard">Клавіатура</string>
+    <string name="select_all">Вибрати все</string>
+    <string name="clear_all">Очистити все</string>
+    <string name="select_visible">Вибрати видимі</string>
+    <string name="clear_visible">Очистити видимі</string>
+    <string name="dns_enabled">DNS УВІМК</string>
+    <string name="dns_disabled">DNS ВИМК</string>
+    <string name="log_enabled">ЛОГ УВІМК</string>
+    <string name="log_disabled">ЛОГ ВИМК</string>
+    <string name="advanced_logging">Розширене журналювання</string>
+    <string name="server_presets">Попередні налаштування DNS-серверів</string>
+    <string name="custom_server">Власний DNS-сервер</string>
+    <string name="save_custom">Зберегти власний</string>
+    <string name="dns_1">DNS 1</string>
+    <string name="dns_2">DNS 2</string>
+    <string name="active">АКТИВНО</string>
+    <string name="inactive">НЕАКТИВНО</string>
+    <string name="vpn_permission_needed">Android потребує дозвіл VPN</string>
+    <string name="vpn_permission_denied">Без дозволу VPN змінити DNS неможливо</string>
+    <string name="connecting">Підключення…</string>
+    <string name="stopping">Зупинка…</string>
+    <string name="log_empty">Журналів поки немає.</string>
+    <string name="copy_logs">Копіювати журнали</string>
+    <string name="clear_logs">Очистити журнали</string>
+    <string name="refresh">Оновити</string>
+    <string name="stats">Статистика</string>
+    <string name="queries">Запити</string>
+    <string name="responses">Відповіді</string>
+    <string name="failures">Збої</string>
+    <string name="last_domain">Останній домен</string>
+    <string name="last_error">Остання помилка</string>
+    <string name="battery_saver">Налагодження економії батареї</string>
+    <string name="battery_saver_hint">Зменшує журналювання та кількість робочих потоків. Корисно, якщо телефон нагрівається.</string>
+    <string name="focus_hint">Використовуйте D-pad. Елемент у фокусі має яскраво-синю рамку.</string>
+    <string name="no_apps_found">Програми для запуску не знайдено.</string>
+    <string name="installed_apps">Встановлені програми</string>
+    <string name="intro_title">Вступ</string>
+    <string name="select_mode">Режим</string>
+    <string name="global_log_group">Усі / невідома програма</string>
+    <string name="multi_app_log_group">Група вибраних програм</string>
+    <string name="invalid_dns">Введіть дійсні DNS-адреси IPv4 або IPv6.</string>
+    <string name="no_selected_apps">Виберіть програми або перемкніться в режим усіх програм.</string>
+    <string name="copied">Скопійовано</string>
+    <string name="cleared">Очищено</string>
+    <string name="server_saved">Сервер збережено</string>
+    <string name="server_selected">Сервер вибрано</string>
+    <string name="build_flavor">v3.5.5 повні переклади</string>
+    <string name="clear_cache">Очистити кеш / журнали програми</string>
+    <string name="cache_cleared">Кеш і журнали програми очищено</string>
+    <string name="power_button_hint">Кнопка живлення: підключити або зупинити DNS VPN</string>
+    <string name="filter_all_apps">Усі</string>
+    <string name="filter_dns_apps">Програми з DNS</string>
+    <string name="filter_no_dns_apps">Програми без DNS</string>
+    <string name="profiles">Профілі</string>
+    <string name="profiles_hint">Збережіть поточний DNS і вибір програм. Натисніть профіль, щоб застосувати його та підключитися.</string>
+    <string name="quick_app_profiles">Швидкі профілі програм</string>
+    <string name="save_current_profile">Зберегти поточне як профіль</string>
+    <string name="clear_profiles">Очистити профілі</string>
+    <string name="profile_name_hint">Назва профілю</string>
+    <string name="profile_saved">Профіль збережено</string>
+    <string name="quick_selected_shortcuts">Ярлики профілів</string>
+    <string name="quick_profiles_hint">Ярлики вибраних програм знаходяться на головній сторінці.</string>
+    <string name="save">Зберегти</string>
+    <string name="cancel">Скасувати</string>
+    <string name="export_settings">Експорт налаштувань</string>
+    <string name="import_settings">Імпорт налаштувань</string>
+    <string name="settings_exported">Налаштування експортовано</string>
+    <string name="settings_imported">Налаштування імпортовано</string>
+    <string name="settings_copied">Налаштування скопійовано в буфер обміну</string>
+    <string name="export_failed">Помилка експорту</string>
+    <string name="import_failed">Помилка імпорту</string>
+    <string name="import_not_available">Вибір імпорту недоступний</string>
+    <string name="settings_title">Налаштування програми</string>
+    <string name="settings_hint">Збережіть або завантажте повну конфігурацію програми, очистіть локальний кеш і виберіть мову програми.</string>
+    <string name="save_all_settings">Зберегти всі налаштування</string>
+    <string name="load_all_settings">Завантажити налаштування</string>
+    <string name="cloud_beta">Хмарне збереження (бета)</string>
+    <string name="cloud_beta_hint">Хмарна синхронізація запланована для майбутньої версії. Локальний експорт/імпорт уже працює.</string>
+    <string name="cloud_beta_not_ready">Хмарне збереження ще не готове.</string>
+    <string name="language">Мова</string>
+    <string name="language_hint">Виберіть мову програми. Ця версія містить повні переклади для всіх видимих мов.</string>
+    <string name="language_system">Мова системи</string>
+    <string name="language_changed">Мову змінено</string>
+    <string name="theme">Тема</string>
+    <string name="theme_hint">Виберіть темну, світлу або системну тему. Налаштування профілів не зміняться.</string>
+    <string name="theme_system">Система</string>
+    <string name="theme_dark">Темна</string>
+    <string name="theme_light">Світла</string>
+    <string name="startup">Автозапуск</string>
+    <string name="startup_hint">Необов’язково. Після запуску Android TV програма може повторно підключити DNS VPN з поточними налаштуваннями або вибраним профілем.</string>
+    <string name="autostart_on">Автозапуск УВІМК</string>
+    <string name="autostart_off">Автозапуск ВИМК</string>
+    <string name="autostart_current">Використовувати поточні налаштування</string>
+    <string name="autostart_profile_hint">Профіль автозапуску</string>
+    <string name="network_tools">Мережеві інструменти</string>
+    <string name="network_tools_hint">Додаткові параметри надійності та швидка діагностика.</string>
+    <string name="ipv6_dns_on">IPv6 DNS УВІМК</string>
+    <string name="ipv6_dns_off">IPv6 DNS ВИМК</string>
+    <string name="tcp_fallback_on">Резерв TCP УВІМК</string>
+    <string name="tcp_fallback_off">Резерв TCP ВИМК</string>
+    <string name="test_dns">Перевірити DNS</string>
+    <string name="testing_dns">Перевірка DNS…</string>
+    <string name="dns_test_ok">Тест DNS OK</string>
+    <string name="dns_test_failed">Тест DNS не виконано</string>
+    <string name="server">Сервер</string>
+    <string name="open_vpn_settings">Налаштування VPN</string>
+    <string name="open_settings_failed">Не вдалося відкрити налаштування</string>
+    <string name="about_app">Про програму</string>
+    <string name="version_label">Версія</string>
+    <string name="check_update">Перевірити оновлення</string>
+    <string name="checking_update">Перевірка оновлення…</string>
+    <string name="no_update_available">Нова версія недоступна.</string>
+    <string name="update_check_failed">Не вдалося перевірити оновлення. Можливо, GitHub Release ще не існує.</string>
+    <string name="update_available">Доступне оновлення</string>
+    <string name="update_available_message">Поточна: %1$s
+Остання: %2$s
+Завантажити й відкрити інсталятор Android?</string>
+    <string name="download_update">Завантажити оновлення</string>
+    <string name="downloading_update">Завантаження оновлення…</string>
+    <string name="update_download_failed">Не вдалося завантажити оновлення.</string>
+    <string name="update_downloaded_open_failed">Завантажено, але не вдалося відкрити інсталятор Android.</string>
+    <string name="install_permission_needed">Потрібен дозвіл на встановлення</string>
+    <string name="install_permission_message">Дозвольте цій програмі встановлювати APK-оновлення, потім перевірте оновлення ще раз.</string>
+    <string name="open_settings">Відкрити налаштування</string>
+    <string name="export_diagnostic_logs">Експорт діагностичних журналів</string>
+    <string name="logs_exported">Діагностичні журнали експортовано</string>
+    <string name="always_on_hint">Always-on VPN налаштовується в системних налаштуваннях VPN Android. Кнопка вище відкриває потрібне місце, якщо прошивка TV це дозволяє.</string>
+    <string name="test_update_source">Перевірити GitHub Releases</string>
+    <string name="testing_update_source">Перевірка джерела оновлень…</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Репозиторій: %1$s
+Поточна: %2$s
+Остання: %3$s
+Останній versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
+    <string name="open_releases_page">Відкрити Releases</string>
+    <string name="update_check_failed_title">Не вдалося перевірити оновлення</string>
+    <string name="update_check_failed_details">Репозиторій: %1$s
+
+Причина: %2$s
+
+Перевірка:
+1. Репозиторій має бути публічним або доступним.
+2. Створіть тег, наприклад v3.5.5.
+3. Зачекайте, поки Actions опублікує GitHub Release.
+4. Release має містити APK-файл.</string>
+    <string name="no_update_details">Поточна: %1$s
+Остання: %2$s
+Останній versionCode: %3$s
+APK: %4$s
+
+Оновлення працює. Просто немає версії новішої за встановлену.</string>
+    <string name="light_theme_fixed">Читабельність світлої теми покращено</string>
+    <string name="download_update_test">Завантажити останній APK (тест)</string>
+    <string name="startup_update_title">Перевірка версії програми</string>
+    <string name="startup_update_checking_message">Перевірка, чи це остання версія…</string>
+    <string name="startup_update_snooze_14_days">Не нагадувати 14 днів</string>
+    <string name="startup_update_disable">Не перевіряти оновлення під час запуску</string>
+    <string name="startup_update_latest_message">У вас уже остання версія: %1$s</string>
+    <string name="startup_update_failed_message">Не вдалося перевірити оновлення зараз. Причина: %1$s</string>
+    <string name="startup_update_on">Перевірка під час запуску УВІМК</string>
+    <string name="startup_update_off">Перевірка під час запуску ВИМК</string>
+    <string name="loading_apps">Завантаження списку програм…</string>
 </resources>

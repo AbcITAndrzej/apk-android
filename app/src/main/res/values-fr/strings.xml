@@ -1,53 +1,184 @@
 <resources>
     <string name="app_name">AdGuard TV DNS Pro</string>
     <string name="home">Accueil</string>
-    <string name="apps">Apps</string>
+    <string name="apps">Applications</string>
     <string name="servers">Serveurs</string>
     <string name="logs">Journaux</string>
-    <string name="settings">Réglages</string>
+    <string name="settings">Paramètres</string>
     <string name="connect">CONNECTER</string>
-    <string name="stop">STOP</string>
+    <string name="stop">ARRÊTER</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>
     <string name="current_server">Serveur actuel</string>
-    <string name="all_apps">Toutes les apps</string>
-    <string name="selected_apps">Apps sélectionnées</string>
-    <string name="selected_apps_count">Apps sélectionnées : %1$d</string>
-    <string name="search_apps">Rechercher des apps…</string>
+    <string name="current_mode">Mode actuel</string>
+    <string name="all_apps">Toutes les applications</string>
+    <string name="selected_apps">Applications sélectionnées</string>
+    <string name="selected_apps_count">Applications sélectionnées : %1$d</string>
+    <string name="dns_on_for_all">Le DNS est activé pour toutes les applications</string>
+    <string name="choose_apps_hint">Choisissez les applications qui doivent utiliser le serveur DNS sélectionné. La journalisation avancée peut être activée par application, mais l’attribution DNS exacte par application n’est fiable que lorsqu’une seule application est sélectionnée.</string>
+    <string name="search_apps">Rechercher des applications…</string>
     <string name="show_keyboard">Clavier</string>
     <string name="select_all">Tout sélectionner</string>
-    <string name="clear_all">Tout désélectionner</string>
-    <string name="select_visible">Sélectionner visibles</string>
-    <string name="clear_visible">Désélectionner visibles</string>
+    <string name="clear_all">Tout effacer</string>
+    <string name="select_visible">Sélectionner les visibles</string>
+    <string name="clear_visible">Effacer les visibles</string>
     <string name="dns_enabled">DNS ON</string>
     <string name="dns_disabled">DNS OFF</string>
     <string name="log_enabled">LOG ON</string>
     <string name="log_disabled">LOG OFF</string>
-    <string name="server_presets">Serveurs DNS prédéfinis</string>
+    <string name="advanced_logging">Journalisation avancée</string>
+    <string name="server_presets">Préréglages de serveur DNS</string>
     <string name="custom_server">Serveur DNS personnalisé</string>
-    <string name="save_custom">Enregistrer</string>
+    <string name="save_custom">Enregistrer personnalisé</string>
+    <string name="dns_1">DNS 1</string>
+    <string name="dns_2">DNS 2</string>
     <string name="active">ACTIF</string>
     <string name="inactive">INACTIF</string>
+    <string name="vpn_permission_needed">Android nécessite l’autorisation VPN</string>
+    <string name="vpn_permission_denied">Sans autorisation VPN, le DNS ne peut pas être changé</string>
     <string name="connecting">Connexion…</string>
     <string name="stopping">Arrêt…</string>
+    <string name="log_empty">Aucun journal pour le moment.</string>
     <string name="copy_logs">Copier les journaux</string>
     <string name="clear_logs">Effacer les journaux</string>
     <string name="refresh">Actualiser</string>
     <string name="stats">Statistiques</string>
-    <string name="battery_saver">Debug économie</string>
-    <string name="invalid_dns">Entrez des adresses DNS IPv4 valides.</string>
+    <string name="queries">Requêtes</string>
+    <string name="responses">Réponses</string>
+    <string name="failures">Échecs</string>
+    <string name="last_domain">Dernier domaine</string>
+    <string name="last_error">Dernière erreur</string>
+    <string name="battery_saver">Débogage économie de batterie</string>
+    <string name="battery_saver_hint">Réduit la journalisation et le nombre de tâches. Utile quand un téléphone chauffe.</string>
+    <string name="focus_hint">Utilisez le pavé directionnel. L’élément sélectionné a une bordure bleu clair.</string>
+    <string name="no_apps_found">Aucune application lançable trouvée.</string>
+    <string name="installed_apps">Applications installées</string>
+    <string name="intro_title">Introduction</string>
+    <string name="select_mode">Mode</string>
+    <string name="global_log_group">Toutes / application inconnue</string>
+    <string name="multi_app_log_group">Groupe d’applications sélectionnées</string>
+    <string name="invalid_dns">Entrez des adresses DNS IPv4 ou IPv6 valides.</string>
+    <string name="no_selected_apps">Sélectionnez des applications ou passez au mode toutes les applications.</string>
     <string name="copied">Copié</string>
     <string name="cleared">Effacé</string>
     <string name="server_saved">Serveur enregistré</string>
     <string name="server_selected">Serveur sélectionné</string>
-    <string name="clear_cache">Vider le cache / journaux</string>
+    <string name="build_flavor">v3.5.5 traductions complètes</string>
+    <string name="clear_cache">Effacer le cache / les journaux</string>
     <string name="cache_cleared">Cache et journaux effacés</string>
-    <string name="power_button_hint">Bouton marche/arrêt : connecter ou arrêter le VPN DNS</string>
-    <string name="build_flavor">v3.5.3 startup update TV fix</string>
+    <string name="power_button_hint">Bouton marche : connecter ou arrêter le VPN DNS</string>
+    <string name="filter_all_apps">Toutes</string>
+    <string name="filter_dns_apps">Apps avec DNS</string>
+    <string name="filter_no_dns_apps">Apps sans DNS</string>
+    <string name="profiles">Profils</string>
+    <string name="profiles_hint">Enregistrez le DNS actuel et la sélection d’applications. Touchez un profil pour l’appliquer et vous connecter.</string>
+    <string name="quick_app_profiles">Profils d’app rapides</string>
+    <string name="save_current_profile">Enregistrer l’état actuel comme profil</string>
+    <string name="clear_profiles">Effacer les profils</string>
+    <string name="profile_name_hint">Nom du profil</string>
+    <string name="profile_saved">Profil enregistré</string>
+    <string name="quick_selected_shortcuts">Raccourcis de profils</string>
+    <string name="quick_profiles_hint">Les raccourcis d’apps sélectionnées sont sur l’accueil.</string>
+    <string name="save">Enregistrer</string>
+    <string name="cancel">Annuler</string>
+    <string name="export_settings">Exporter les paramètres</string>
+    <string name="import_settings">Importer les paramètres</string>
+    <string name="settings_exported">Paramètres exportés</string>
+    <string name="settings_imported">Paramètres importés</string>
+    <string name="settings_copied">Paramètres copiés dans le presse-papiers</string>
+    <string name="export_failed">Échec de l’exportation</string>
+    <string name="import_failed">Échec de l’importation</string>
+    <string name="import_not_available">Le sélecteur d’importation n’est pas disponible</string>
+    <string name="settings_title">Paramètres du programme</string>
+    <string name="settings_hint">Enregistrez ou chargez toute la configuration, effacez le cache local et choisissez la langue de l’application.</string>
+    <string name="save_all_settings">Enregistrer tous les paramètres</string>
+    <string name="load_all_settings">Charger les paramètres</string>
+    <string name="cloud_beta">Sauvegarde cloud (bêta)</string>
+    <string name="cloud_beta_hint">La synchronisation cloud est prévue pour une future version. L’export/import local fonctionne maintenant.</string>
+    <string name="cloud_beta_not_ready">La sauvegarde cloud n’est pas encore prête.</string>
+    <string name="language">Langue</string>
+    <string name="language_hint">Choisissez la langue de l’application. Cette version contient des traductions complètes pour toutes les langues visibles.</string>
+    <string name="language_system">Langue du système</string>
+    <string name="language_changed">Langue changée</string>
+    <string name="theme">Thème</string>
+    <string name="theme_hint">Choisissez l’apparence sombre, claire ou système. Les paramètres de profil restent inchangés.</string>
+    <string name="theme_system">Système</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="theme_light">Clair</string>
+    <string name="startup">Démarrage auto</string>
+    <string name="startup_hint">Optionnel. Après le démarrage d’Android TV, l’app peut reconnecter le VPN DNS avec les paramètres actuels ou un profil choisi.</string>
+    <string name="autostart_on">Démarrage auto ON</string>
+    <string name="autostart_off">Démarrage auto OFF</string>
+    <string name="autostart_current">Utiliser les paramètres actuels</string>
+    <string name="autostart_profile_hint">Profil de démarrage auto</string>
+    <string name="network_tools">Outils réseau</string>
+    <string name="network_tools_hint">Options de fiabilité supplémentaires et diagnostics rapides.</string>
+    <string name="ipv6_dns_on">DNS IPv6 ON</string>
+    <string name="ipv6_dns_off">DNS IPv6 OFF</string>
+    <string name="tcp_fallback_on">Repli TCP ON</string>
+    <string name="tcp_fallback_off">Repli TCP OFF</string>
+    <string name="test_dns">Tester DNS</string>
+    <string name="testing_dns">Test DNS…</string>
+    <string name="dns_test_ok">Test DNS OK</string>
+    <string name="dns_test_failed">Test DNS échoué</string>
+    <string name="server">Serveur</string>
+    <string name="open_vpn_settings">Paramètres VPN</string>
+    <string name="open_settings_failed">Impossible d’ouvrir les paramètres</string>
+    <string name="about_app">À propos de l’application</string>
+    <string name="version_label">Version</string>
+    <string name="check_update">Vérifier la mise à jour</string>
+    <string name="checking_update">Recherche de mise à jour…</string>
+    <string name="no_update_available">Aucune nouvelle version disponible.</string>
+    <string name="update_check_failed">Échec de la vérification. La GitHub Release n’existe peut-être pas encore.</string>
+    <string name="update_available">Mise à jour disponible</string>
+    <string name="update_available_message">Actuelle : %1$s
+Dernière : %2$s
+Télécharger et ouvrir l’installateur Android ?</string>
+    <string name="download_update">Télécharger la mise à jour</string>
+    <string name="downloading_update">Téléchargement de la mise à jour…</string>
+    <string name="update_download_failed">Échec du téléchargement de la mise à jour.</string>
+    <string name="update_downloaded_open_failed">Téléchargé, mais l’installateur Android n’a pas pu être ouvert.</string>
+    <string name="install_permission_needed">Autorisation d’installation nécessaire</string>
+    <string name="install_permission_message">Autorisez cette application à installer des mises à jour APK, puis vérifiez à nouveau.</string>
+    <string name="open_settings">Ouvrir les paramètres</string>
+    <string name="export_diagnostic_logs">Exporter les journaux de diagnostic</string>
+    <string name="logs_exported">Journaux de diagnostic exportés</string>
+    <string name="always_on_hint">Le VPN permanent se configure dans les paramètres VPN système d’Android. Le bouton ci-dessus ouvre le bon endroit lorsque le firmware TV le permet.</string>
     <string name="test_update_source">Tester GitHub Releases</string>
     <string name="testing_update_source">Test de la source de mise à jour…</string>
-    <string name="update_source_ok">GitHub Releases fonctionne</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Dépôt : %1$s
+Actuelle : %2$s
+Dernière : %3$s
+Dernier versionCode : %4$s
+APK : %5$s
+URL : %6$s</string>
     <string name="open_releases_page">Ouvrir Releases</string>
-    <string name="update_check_failed_title">Échec de la vérification</string>
-    <string name="language_hint">Choisissez la langue. Certaines langues sont en bêta et peuvent revenir à l’anglais.</string>
+    <string name="update_check_failed_title">Échec de la vérification de mise à jour</string>
+    <string name="update_check_failed_details">Dépôt : %1$s
+
+Raison : %2$s
+
+Liste de contrôle :
+1. Le dépôt doit être public ou accessible.
+2. Créez un tag, par exemple v3.5.5.
+3. Attendez qu’Actions publie la GitHub Release.
+4. La Release doit contenir un APK.</string>
+    <string name="no_update_details">Actuelle : %1$s
+Dernière : %2$s
+Dernier versionCode : %3$s
+APK : %4$s
+
+Le système de mise à jour fonctionne. Il n’y a simplement pas de version plus récente que celle installée.</string>
+    <string name="light_theme_fixed">Lisibilité du thème clair améliorée</string>
+    <string name="download_update_test">Télécharger le dernier APK (test)</string>
+    <string name="startup_update_title">Vérification de la version</string>
+    <string name="startup_update_checking_message">Vérification que c’est la dernière version…</string>
+    <string name="startup_update_snooze_14_days">Ne pas me rappeler pendant 14 jours</string>
+    <string name="startup_update_disable">Ne pas vérifier les mises à jour au démarrage</string>
+    <string name="startup_update_latest_message">Vous avez déjà la dernière version : %1$s</string>
+    <string name="startup_update_failed_message">Impossible de vérifier les mises à jour maintenant. Raison : %1$s</string>
+    <string name="startup_update_on">Vérification au démarrage ON</string>
+    <string name="startup_update_off">Vérification au démarrage OFF</string>
+    <string name="loading_apps">Chargement de la liste des applications…</string>
 </resources>

@@ -63,7 +63,7 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.5.3 startup update TV fix</string>
+    <string name="build_flavor">v3.5.5 full translations</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
@@ -98,7 +98,7 @@
     <string name="cloud_beta_hint">Cloud sync is planned for a future version. Local export/import works now.</string>
     <string name="cloud_beta_not_ready">Cloud save is not ready yet.</string>
     <string name="language">Language</string>
-    <string name="language_hint">Choose the application language. PL/EN/DE/FR/NL are the most complete. Other languages are beta and may fall back to English.</string>
+    <string name="language_hint">Choose the app language. This build includes complete translations for all visible languages.</string>
     <string name="language_system">System language</string>
     <string name="language_changed">Language changed</string>
 

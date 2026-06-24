@@ -1,41 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AdGuard TV DNS Pro</string>
     <string name="home">Ana ekran</string>
     <string name="apps">Uygulamalar</string>
     <string name="servers">Sunucular</string>
     <string name="logs">Kayıtlar</string>
+    <string name="settings">Ayarlar</string>
     <string name="connect">BAĞLAN</string>
     <string name="stop">DURDUR</string>
     <string name="on">AÇIK</string>
     <string name="off">KAPALI</string>
+    <string name="current_server">Geçerli sunucu</string>
+    <string name="current_mode">Geçerli mod</string>
     <string name="all_apps">Tüm uygulamalar</string>
     <string name="selected_apps">Seçili uygulamalar</string>
+    <string name="selected_apps_count">Seçili uygulamalar: %1$d</string>
+    <string name="dns_on_for_all">DNS tüm uygulamalar için etkin</string>
+    <string name="choose_apps_hint">Seçili DNS sunucusunu kullanacak uygulamaları seçin. Gelişmiş kayıt uygulama bazında açılabilir, ancak uygulama bazlı DNS eşleştirmesi yalnızca tek uygulama seçiliyken kesin olur.</string>
     <string name="search_apps">Uygulama ara…</string>
+    <string name="show_keyboard">Klavye</string>
+    <string name="select_all">Tümünü seç</string>
+    <string name="clear_all">Tümünü temizle</string>
+    <string name="select_visible">Görünenleri seç</string>
+    <string name="clear_visible">Görünenleri temizle</string>
+    <string name="dns_enabled">DNS AÇIK</string>
+    <string name="dns_disabled">DNS KAPALI</string>
+    <string name="log_enabled">KAYIT AÇIK</string>
+    <string name="log_disabled">KAYIT KAPALI</string>
+    <string name="advanced_logging">Gelişmiş kayıt</string>
+    <string name="server_presets">DNS sunucu hazır ayarları</string>
+    <string name="custom_server">Özel DNS sunucusu</string>
+    <string name="save_custom">Özel ayarı kaydet</string>
+    <string name="dns_1">DNS 1</string>
+    <string name="dns_2">DNS 2</string>
     <string name="active">AKTİF</string>
     <string name="inactive">PASİF</string>
-    <string name="clear_cache">Uygulama önbelleğini / kayıtlarını temizle</string>
+    <string name="vpn_permission_needed">Android VPN izni gerektirir</string>
+    <string name="vpn_permission_denied">VPN izni olmadan DNS değiştirilemez</string>
+    <string name="connecting">Bağlanıyor…</string>
+    <string name="stopping">Durduruluyor…</string>
+    <string name="log_empty">Henüz kayıt yok.</string>
+    <string name="copy_logs">Kayıtları kopyala</string>
+    <string name="clear_logs">Kayıtları temizle</string>
+    <string name="refresh">Yenile</string>
+    <string name="stats">İstatistikler</string>
+    <string name="queries">Sorgular</string>
+    <string name="responses">Yanıtlar</string>
+    <string name="failures">Hatalar</string>
+    <string name="last_domain">Son alan adı</string>
+    <string name="last_error">Son hata</string>
+    <string name="battery_saver">Pil tasarrufu hata ayıklama</string>
+    <string name="battery_saver_hint">Kayıtları ve çalışan sayısını azaltır. Telefon ısınıyorsa faydalıdır.</string>
+    <string name="focus_hint">Yön tuşlarını kullanın. Odaktaki öğenin parlak mavi çerçevesi vardır.</string>
+    <string name="no_apps_found">Başlatılabilir uygulama bulunamadı.</string>
+    <string name="installed_apps">Yüklü uygulamalar</string>
+    <string name="intro_title">Giriş</string>
+    <string name="select_mode">Mod</string>
+    <string name="global_log_group">Tüm / bilinmeyen uygulama</string>
+    <string name="multi_app_log_group">Seçili uygulama grubu</string>
+    <string name="invalid_dns">Geçerli IPv4 veya IPv6 DNS adresleri girin.</string>
+    <string name="no_selected_apps">Uygulama seçin veya tüm uygulamalar moduna geçin.</string>
+    <string name="copied">Kopyalandı</string>
+    <string name="cleared">Temizlendi</string>
+    <string name="server_saved">Sunucu kaydedildi</string>
+    <string name="server_selected">Sunucu seçildi</string>
+    <string name="build_flavor">v3.5.5 tam çeviriler</string>
+    <string name="clear_cache">Uygulama önbelleğini / kayıtları temizle</string>
     <string name="cache_cleared">Uygulama önbelleği ve kayıtlar temizlendi</string>
-    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
-    <string name="settings">Ayarlar</string>
-    <string name="check_update">Güncellemeyi denetle</string>
-    <string name="checking_update">Güncelleme denetleniyor…</string>
-    <string name="no_update_available">Yeni sürüm yok.</string>
-    <string name="test_update_source">GitHub Releases testi</string>
-    <string name="testing_update_source">Güncelleme kaynağı test ediliyor…</string>
-    <string name="update_source_ok">GitHub Releases çalışıyor</string>
-    <string name="update_check_failed_title">Güncelleme denetlenemedi</string>
-    <string name="update_check_failed">Güncelleme denetlenemedi. GitHub Release henüz yok olabilir.</string>
-    <string name="open_releases_page">Releases sayfasını aç</string>
-    <string name="download_update">Güncellemeyi indir</string>
-    <string name="downloading_update">Güncelleme indiriliyor…</string>
+    <string name="power_button_hint">Güç düğmesi: DNS VPN bağlantısını başlatır veya durdurur</string>
+    <string name="filter_all_apps">Tümü</string>
+    <string name="filter_dns_apps">DNS kullanan uygulamalar</string>
+    <string name="filter_no_dns_apps">DNS kullanmayan uygulamalar</string>
+    <string name="profiles">Profiller</string>
+    <string name="profiles_hint">Geçerli DNS + uygulama seçimini kaydedin. Bir profile dokunarak uygulayın ve bağlanın.</string>
+    <string name="quick_app_profiles">Hızlı uygulama profilleri</string>
+    <string name="save_current_profile">Geçerli ayarları profil olarak kaydet</string>
+    <string name="clear_profiles">Profilleri temizle</string>
+    <string name="profile_name_hint">Profil adı</string>
+    <string name="profile_saved">Profil kaydedildi</string>
+    <string name="quick_selected_shortcuts">Profil kısayolları</string>
+    <string name="quick_profiles_hint">Seçili uygulama kısayolları Ana ekrandadır.</string>
+    <string name="save">Kaydet</string>
+    <string name="cancel">İptal</string>
+    <string name="export_settings">Ayarları dışa aktar</string>
+    <string name="import_settings">Ayarları içe aktar</string>
+    <string name="settings_exported">Ayarlar dışa aktarıldı</string>
+    <string name="settings_imported">Ayarlar içe aktarıldı</string>
+    <string name="settings_copied">Ayarlar panoya kopyalandı</string>
+    <string name="export_failed">Dışa aktarma başarısız</string>
+    <string name="import_failed">İçe aktarma başarısız</string>
+    <string name="import_not_available">İçe aktarma seçicisi kullanılamıyor</string>
+    <string name="settings_title">Program ayarları</string>
+    <string name="settings_hint">Tüm program yapılandırmasını kaydedin veya yükleyin, yerel önbelleği temizleyin ve uygulama dilini seçin.</string>
+    <string name="save_all_settings">Tüm ayarları kaydet</string>
+    <string name="load_all_settings">Ayarları yükle</string>
+    <string name="cloud_beta">Bulut kaydı (beta)</string>
+    <string name="cloud_beta_hint">Bulut senkronizasyonu gelecek bir sürüm için planlanıyor. Yerel dışa/içe aktarma şu anda çalışır.</string>
+    <string name="cloud_beta_not_ready">Bulut kaydı henüz hazır değil.</string>
     <string name="language">Dil</string>
+    <string name="language_hint">Uygulama dilini seçin. Bu sürüm, görünen tüm diller için eksiksiz çeviriler içerir.</string>
     <string name="language_system">Sistem dili</string>
     <string name="language_changed">Dil değiştirildi</string>
-    <string name="language_hint">Uygulama dilini seçin. Bu dil beta olabilir ve eksik metinler İngilizce görünebilir.</string>
-    <string name="about_app">Uygulama hakkında</string>
-    <string name="version_label">Sürüm</string>
     <string name="theme">Tema</string>
+    <string name="theme_hint">Koyu, açık veya sistem görünümünü seçin. Profil ayarları değişmez.</string>
     <string name="theme_system">Sistem</string>
     <string name="theme_dark">Koyu</string>
     <string name="theme_light">Açık</string>
+    <string name="startup">Otomatik başlatma</string>
+    <string name="startup_hint">İsteğe bağlı. Android TV başladıktan sonra uygulama geçerli ayarlarla veya seçili profille DNS VPN bağlantısını yeniden kurabilir.</string>
+    <string name="autostart_on">Otomatik başlatma AÇIK</string>
+    <string name="autostart_off">Otomatik başlatma KAPALI</string>
+    <string name="autostart_current">Geçerli ayarları kullan</string>
+    <string name="autostart_profile_hint">Otomatik başlatma profili</string>
+    <string name="network_tools">Ağ araçları</string>
+    <string name="network_tools_hint">Ek güvenilirlik seçenekleri ve hızlı tanılama.</string>
+    <string name="ipv6_dns_on">IPv6 DNS AÇIK</string>
+    <string name="ipv6_dns_off">IPv6 DNS KAPALI</string>
+    <string name="tcp_fallback_on">TCP yedekleme AÇIK</string>
+    <string name="tcp_fallback_off">TCP yedekleme KAPALI</string>
+    <string name="test_dns">DNS test et</string>
+    <string name="testing_dns">DNS test ediliyor…</string>
+    <string name="dns_test_ok">DNS testi başarılı</string>
+    <string name="dns_test_failed">DNS testi başarısız</string>
+    <string name="server">Sunucu</string>
+    <string name="open_vpn_settings">VPN ayarları</string>
+    <string name="open_settings_failed">Ayarlar açılamadı</string>
+    <string name="about_app">Uygulama hakkında</string>
+    <string name="version_label">Sürüm</string>
+    <string name="check_update">Güncellemeyi kontrol et</string>
+    <string name="checking_update">Güncelleme kontrol ediliyor…</string>
+    <string name="no_update_available">Yeni sürüm yok.</string>
+    <string name="update_check_failed">Güncelleme kontrolü başarısız. GitHub Release henüz mevcut olmayabilir.</string>
+    <string name="update_available">Güncelleme mevcut</string>
+    <string name="update_available_message">Geçerli: %1$s
+En yeni: %2$s
+İndirip Android yükleyicisini açmak ister misiniz?</string>
+    <string name="download_update">Güncellemeyi indir</string>
+    <string name="downloading_update">Güncelleme indiriliyor…</string>
+    <string name="update_download_failed">Güncelleme indirilemedi.</string>
+    <string name="update_downloaded_open_failed">İndirildi, ancak Android yükleyicisi açılamadı.</string>
+    <string name="install_permission_needed">Yükleme izni gerekiyor</string>
+    <string name="install_permission_message">Bu uygulamanın APK güncellemelerini yüklemesine izin verin, sonra güncellemeyi tekrar kontrol edin.</string>
+    <string name="open_settings">Ayarları aç</string>
+    <string name="export_diagnostic_logs">Tanılama kayıtlarını dışa aktar</string>
+    <string name="logs_exported">Tanılama kayıtları dışa aktarıldı</string>
+    <string name="always_on_hint">Her zaman açık VPN, Android sistem VPN ayarlarında yapılandırılır. TV yazılımı izin verirse yukarıdaki düğme doğru yeri açar.</string>
+    <string name="test_update_source">GitHub Releases test et</string>
+    <string name="testing_update_source">Güncelleme kaynağı test ediliyor…</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Depo: %1$s
+Geçerli: %2$s
+En yeni: %3$s
+En yeni versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
+    <string name="open_releases_page">Releases sayfasını aç</string>
+    <string name="update_check_failed_title">Güncelleme kontrolü başarısız</string>
+    <string name="update_check_failed_details">Depo: %1$s
+
+Neden: %2$s
+
+Kontrol listesi:
+1. Depo herkese açık veya erişilebilir olmalı.
+2. Örneğin v3.5.2 gibi bir tag oluşturun.
+3. Actions GitHub Release yayımlayana kadar bekleyin.
+4. Release içinde APK dosyası olmalı.</string>
+    <string name="no_update_details">Geçerli: %1$s
+En yeni: %2$s
+En yeni versionCode: %3$s
+APK: %4$s
+
+Güncelleyici çalışıyor. Kurulu sürümden daha yeni bir sürüm yok.</string>
+    <string name="light_theme_fixed">Açık tema okunabilirliği iyileştirildi</string>
+    <string name="download_update_test">En yeni APK indir (test)</string>
+    <string name="startup_update_title">Uygulama sürümü kontrol ediliyor</string>
+    <string name="startup_update_checking_message">En yeni sürüm olup olmadığı kontrol ediliyor…</string>
+    <string name="startup_update_snooze_14_days">14 gün boyunca hatırlatma</string>
+    <string name="startup_update_disable">Başlangıçta güncellemeleri kontrol etme</string>
+    <string name="startup_update_latest_message">Zaten en yeni sürüme sahipsiniz: %1$s</string>
+    <string name="startup_update_failed_message">Güncellemeler şu anda kontrol edilemedi. Neden: %1$s</string>
+    <string name="startup_update_on">Başlangıç güncelleme kontrolü AÇIK</string>
+    <string name="startup_update_off">Başlangıç güncelleme kontrolü KAPALI</string>
+    <string name="loading_apps">Uygulama listesi yükleniyor…</string>
 </resources>

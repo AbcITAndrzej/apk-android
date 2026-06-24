@@ -3,16 +3,19 @@
     <string name="home">Start</string>
     <string name="apps">Apps</string>
     <string name="servers">Servers</string>
-    <string name="logs">Logs</string>
+    <string name="logs">Logboeken</string>
     <string name="settings">Instellingen</string>
     <string name="connect">VERBINDEN</string>
     <string name="stop">STOP</string>
     <string name="on">AAN</string>
     <string name="off">UIT</string>
     <string name="current_server">Huidige server</string>
+    <string name="current_mode">Huidige modus</string>
     <string name="all_apps">Alle apps</string>
     <string name="selected_apps">Geselecteerde apps</string>
     <string name="selected_apps_count">Geselecteerde apps: %1$d</string>
+    <string name="dns_on_for_all">DNS is ingeschakeld voor alle apps</string>
+    <string name="choose_apps_hint">Kies welke apps de geselecteerde DNS-server moeten gebruiken. Geavanceerde logging kan per app worden ingeschakeld, maar exacte DNS-toewijzing per app is alleen exact wanneer één app is geselecteerd.</string>
     <string name="search_apps">Apps zoeken…</string>
     <string name="show_keyboard">Toetsenbord</string>
     <string name="select_all">Alles selecteren</string>
@@ -23,31 +26,159 @@
     <string name="dns_disabled">DNS UIT</string>
     <string name="log_enabled">LOG AAN</string>
     <string name="log_disabled">LOG UIT</string>
-    <string name="server_presets">DNS-serverpresets</string>
+    <string name="advanced_logging">Geavanceerde logging</string>
+    <string name="server_presets">DNS-server presets</string>
     <string name="custom_server">Aangepaste DNS-server</string>
-    <string name="save_custom">Opslaan</string>
+    <string name="save_custom">Aangepast opslaan</string>
+    <string name="dns_1">DNS 1</string>
+    <string name="dns_2">DNS 2</string>
     <string name="active">ACTIEF</string>
     <string name="inactive">INACTIEF</string>
+    <string name="vpn_permission_needed">Android vereist VPN-toestemming</string>
+    <string name="vpn_permission_denied">Zonder VPN-toestemming kan DNS niet worden gewijzigd</string>
     <string name="connecting">Verbinden…</string>
     <string name="stopping">Stoppen…</string>
-    <string name="copy_logs">Logs kopiëren</string>
-    <string name="clear_logs">Logs wissen</string>
+    <string name="log_empty">Nog geen logboeken.</string>
+    <string name="copy_logs">Logboeken kopiëren</string>
+    <string name="clear_logs">Logboeken wissen</string>
     <string name="refresh">Vernieuwen</string>
     <string name="stats">Statistieken</string>
-    <string name="battery_saver">Debug spaarstand</string>
-    <string name="invalid_dns">Voer geldige IPv4 DNS-adressen in.</string>
+    <string name="queries">Query’s</string>
+    <string name="responses">Antwoorden</string>
+    <string name="failures">Fouten</string>
+    <string name="last_domain">Laatste domein</string>
+    <string name="last_error">Laatste fout</string>
+    <string name="battery_saver">Debug batterijbesparing</string>
+    <string name="battery_saver_hint">Vermindert logging en het aantal workers. Handig wanneer een telefoon warm wordt.</string>
+    <string name="focus_hint">Gebruik de D-pad. Het gefocuste item heeft een felblauwe rand.</string>
+    <string name="no_apps_found">Geen startbare apps gevonden.</string>
+    <string name="installed_apps">Geïnstalleerde apps</string>
+    <string name="intro_title">Introductie</string>
+    <string name="select_mode">Modus</string>
+    <string name="global_log_group">Alle / onbekende app</string>
+    <string name="multi_app_log_group">Groep geselecteerde apps</string>
+    <string name="invalid_dns">Voer geldige IPv4- of IPv6-DNS-adressen in.</string>
+    <string name="no_selected_apps">Selecteer apps of schakel over naar de modus alle apps.</string>
     <string name="copied">Gekopieerd</string>
     <string name="cleared">Gewist</string>
     <string name="server_saved">Server opgeslagen</string>
     <string name="server_selected">Server geselecteerd</string>
-    <string name="clear_cache">Cache / logs wissen</string>
-    <string name="cache_cleared">Cache en logs gewist</string>
-    <string name="power_button_hint">Aan/uit-knop: DNS-VPN verbinden of stoppen</string>
-    <string name="build_flavor">v3.5.3 startup update TV fix</string>
+    <string name="build_flavor">v3.5.5 volledige vertalingen</string>
+    <string name="clear_cache">App-cache / logboeken wissen</string>
+    <string name="cache_cleared">App-cache en logboeken gewist</string>
+    <string name="power_button_hint">Aan/uit-knop: DNS VPN verbinden of stoppen</string>
+    <string name="filter_all_apps">Alle</string>
+    <string name="filter_dns_apps">Apps met DNS</string>
+    <string name="filter_no_dns_apps">Apps zonder DNS</string>
+    <string name="profiles">Profielen</string>
+    <string name="profiles_hint">Sla de huidige DNS- en appselectie op. Tik op een profiel om het toe te passen en te verbinden.</string>
+    <string name="quick_app_profiles">Snelle app-profielen</string>
+    <string name="save_current_profile">Huidige opslaan als profiel</string>
+    <string name="clear_profiles">Profielen wissen</string>
+    <string name="profile_name_hint">Profielnaam</string>
+    <string name="profile_saved">Profiel opgeslagen</string>
+    <string name="quick_selected_shortcuts">Profielsnelkoppelingen</string>
+    <string name="quick_profiles_hint">Geselecteerde app-snelkoppelingen staan op Start.</string>
+    <string name="save">Opslaan</string>
+    <string name="cancel">Annuleren</string>
+    <string name="export_settings">Instellingen exporteren</string>
+    <string name="import_settings">Instellingen importeren</string>
+    <string name="settings_exported">Instellingen geëxporteerd</string>
+    <string name="settings_imported">Instellingen geïmporteerd</string>
+    <string name="settings_copied">Instellingen gekopieerd naar klembord</string>
+    <string name="export_failed">Exporteren mislukt</string>
+    <string name="import_failed">Importeren mislukt</string>
+    <string name="import_not_available">Importkiezer is niet beschikbaar</string>
+    <string name="settings_title">Programma-instellingen</string>
+    <string name="settings_hint">Sla de volledige configuratie op of laad die, wis lokale cache en kies de app-taal.</string>
+    <string name="save_all_settings">Alle instellingen opslaan</string>
+    <string name="load_all_settings">Instellingen laden</string>
+    <string name="cloud_beta">Cloudopslag (bèta)</string>
+    <string name="cloud_beta_hint">Cloudsync is gepland voor een toekomstige versie. Lokale export/import werkt nu.</string>
+    <string name="cloud_beta_not_ready">Cloudopslag is nog niet klaar.</string>
+    <string name="language">Taal</string>
+    <string name="language_hint">Kies de app-taal. Deze versie bevat volledige vertalingen voor alle zichtbare talen.</string>
+    <string name="language_system">Systeemtaal</string>
+    <string name="language_changed">Taal gewijzigd</string>
+    <string name="theme">Thema</string>
+    <string name="theme_hint">Kies donker, licht of systeemweergave. Profielinstellingen blijven ongewijzigd.</string>
+    <string name="theme_system">Systeem</string>
+    <string name="theme_dark">Donker</string>
+    <string name="theme_light">Licht</string>
+    <string name="startup">Automatisch starten</string>
+    <string name="startup_hint">Optioneel. Nadat Android TV start, kan de app DNS VPN opnieuw verbinden met de huidige instellingen of een geselecteerd profiel.</string>
+    <string name="autostart_on">Automatisch starten AAN</string>
+    <string name="autostart_off">Automatisch starten UIT</string>
+    <string name="autostart_current">Huidige instellingen gebruiken</string>
+    <string name="autostart_profile_hint">Autostart-profiel</string>
+    <string name="network_tools">Netwerktools</string>
+    <string name="network_tools_hint">Extra betrouwbaarheidsopties en snelle diagnostiek.</string>
+    <string name="ipv6_dns_on">IPv6-DNS AAN</string>
+    <string name="ipv6_dns_off">IPv6-DNS UIT</string>
+    <string name="tcp_fallback_on">TCP-fallback AAN</string>
+    <string name="tcp_fallback_off">TCP-fallback UIT</string>
+    <string name="test_dns">DNS testen</string>
+    <string name="testing_dns">DNS testen…</string>
+    <string name="dns_test_ok">DNS-test OK</string>
+    <string name="dns_test_failed">DNS-test mislukt</string>
+    <string name="server">Server</string>
+    <string name="open_vpn_settings">VPN-instellingen</string>
+    <string name="open_settings_failed">Kon instellingen niet openen</string>
+    <string name="about_app">Over de app</string>
+    <string name="version_label">Versie</string>
+    <string name="check_update">Update controleren</string>
+    <string name="checking_update">Update controleren…</string>
+    <string name="no_update_available">Geen nieuwe versie beschikbaar.</string>
+    <string name="update_check_failed">Updatecontrole mislukt. GitHub Release bestaat mogelijk nog niet.</string>
+    <string name="update_available">Update beschikbaar</string>
+    <string name="update_available_message">Huidig: %1$s
+Nieuwste: %2$s
+Downloaden en Android-installatieprogramma openen?</string>
+    <string name="download_update">Update downloaden</string>
+    <string name="downloading_update">Update downloaden…</string>
+    <string name="update_download_failed">Update downloaden mislukt.</string>
+    <string name="update_downloaded_open_failed">Gedownload, maar Android-installatieprogramma kon niet worden geopend.</string>
+    <string name="install_permission_needed">Installatietoestemming nodig</string>
+    <string name="install_permission_message">Sta deze app toe APK-updates te installeren en controleer daarna opnieuw.</string>
+    <string name="open_settings">Instellingen openen</string>
+    <string name="export_diagnostic_logs">Diagnoselogboeken exporteren</string>
+    <string name="logs_exported">Diagnoselogboeken geëxporteerd</string>
+    <string name="always_on_hint">Always-on VPN wordt geconfigureerd in de Android-systeeminstellingen voor VPN. De knop hierboven opent de juiste plek wanneer de TV-firmware dit toestaat.</string>
     <string name="test_update_source">GitHub Releases testen</string>
     <string name="testing_update_source">Updatebron testen…</string>
-    <string name="update_source_ok">GitHub Releases werkt</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Repository: %1$s
+Huidig: %2$s
+Nieuwste: %3$s
+Nieuwste versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
     <string name="open_releases_page">Releases openen</string>
     <string name="update_check_failed_title">Updatecontrole mislukt</string>
-    <string name="language_hint">Kies de app-taal. Sommige talen zijn bèta en kunnen terugvallen op Engels.</string>
+    <string name="update_check_failed_details">Repository: %1$s
+
+Reden: %2$s
+
+Checklist:
+1. Repo moet openbaar of bereikbaar zijn.
+2. Maak een tag, bijvoorbeeld v3.5.5.
+3. Wacht tot Actions de GitHub Release publiceert.
+4. Release moet een APK-asset bevatten.</string>
+    <string name="no_update_details">Huidig: %1$s
+Nieuwste: %2$s
+Nieuwste versionCode: %3$s
+APK: %4$s
+
+De updater werkt. Er is gewoon geen nieuwere versie dan de geïnstalleerde.</string>
+    <string name="light_theme_fixed">Leesbaarheid van licht thema verbeterd</string>
+    <string name="download_update_test">Nieuwste APK downloaden (test)</string>
+    <string name="startup_update_title">App-versie controleren</string>
+    <string name="startup_update_checking_message">Controleren of dit de nieuwste versie is…</string>
+    <string name="startup_update_snooze_14_days">14 dagen niet herinneren</string>
+    <string name="startup_update_disable">Niet controleren op updates bij opstarten</string>
+    <string name="startup_update_latest_message">Je hebt al de nieuwste versie: %1$s</string>
+    <string name="startup_update_failed_message">Kon updates nu niet controleren. Reden: %1$s</string>
+    <string name="startup_update_on">Updatecontrole bij opstarten AAN</string>
+    <string name="startup_update_off">Updatecontrole bij opstarten UIT</string>
+    <string name="loading_apps">App-lijst laden…</string>
 </resources>

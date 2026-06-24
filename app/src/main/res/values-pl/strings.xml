@@ -63,7 +63,7 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.5.3 startup update TV fix</string>
+    <string name="build_flavor">v3.5.5 pełne tłumaczenia</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -98,7 +98,7 @@
     <string name="cloud_beta_hint">Synchronizacja z chmurą jest zaplanowana na przyszłą wersję. Lokalny eksport/import działa już teraz.</string>
     <string name="cloud_beta_not_ready">Zapis do chmury nie jest jeszcze gotowy.</string>
     <string name="language">Język</string>
-    <string name="language_hint">Wybierz język aplikacji. PL/EN/DE/FR/NL są najbardziej kompletne. Pozostałe języki są beta i mogą wracać do angielskiego.</string>
+    <string name="language_hint">Wybierz język aplikacji. Ta wersja zawiera kompletne tłumaczenia dla wszystkich widocznych języków.</string>
     <string name="language_system">Język systemu</string>
     <string name="language_changed">Język zmieniony</string>
 

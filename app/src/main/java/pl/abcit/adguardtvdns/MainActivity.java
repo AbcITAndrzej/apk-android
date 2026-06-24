@@ -145,7 +145,7 @@ public class MainActivity extends Activity {
         showScreen(SCREEN_HOME);
         handler.postDelayed(this::loadAppsAsync, 250);
         handler.postDelayed(() -> AppUpdateManager.checkForUpdateOnStartup(this), 650);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.5.3 startup update TV fix");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.5.4 i18n TR fixed");
     }
 
     @Override protected void onResume() {
@@ -1432,35 +1432,15 @@ public class MainActivity extends Activity {
         out.add(new LanguageOption("system", getString(R.string.language_system)));
         out.add(new LanguageOption("en", "English"));
         out.add(new LanguageOption("pl", "Polski"));
+        out.add(new LanguageOption("tr", "Türkçe"));
         out.add(new LanguageOption("de", "Deutsch"));
         out.add(new LanguageOption("fr", "Français"));
+        out.add(new LanguageOption("es", "Español"));
+        out.add(new LanguageOption("it", "Italiano"));
+        out.add(new LanguageOption("pt", "Português"));
         out.add(new LanguageOption("nl", "Nederlands"));
-        out.add(new LanguageOption("es", "Español beta"));
-        out.add(new LanguageOption("it", "Italiano beta"));
-        out.add(new LanguageOption("pt", "Português beta"));
-        out.add(new LanguageOption("cs", "Čeština beta"));
-        out.add(new LanguageOption("sk", "Slovenčina beta"));
-        out.add(new LanguageOption("hu", "Magyar beta"));
-        out.add(new LanguageOption("ro", "Română beta"));
-        out.add(new LanguageOption("bg", "Български beta"));
-        out.add(new LanguageOption("el", "Ελληνικά beta"));
-        out.add(new LanguageOption("hr", "Hrvatski beta"));
-        out.add(new LanguageOption("sl", "Slovenščina beta"));
-        out.add(new LanguageOption("sr", "Srpski beta"));
-        out.add(new LanguageOption("sq", "Shqip beta"));
-        out.add(new LanguageOption("da", "Dansk beta"));
-        out.add(new LanguageOption("sv", "Svenska beta"));
-        out.add(new LanguageOption("fi", "Suomi beta"));
-        out.add(new LanguageOption("et", "Eesti beta"));
-        out.add(new LanguageOption("lv", "Latviešu beta"));
-        out.add(new LanguageOption("lt", "Lietuvių beta"));
-        out.add(new LanguageOption("ga", "Gaeilge beta"));
-        out.add(new LanguageOption("mt", "Malti beta"));
-        out.add(new LanguageOption("is", "Íslenska beta"));
-        out.add(new LanguageOption("no", "Norsk beta"));
-        out.add(new LanguageOption("uk", "Українська beta"));
-        out.add(new LanguageOption("ru", "Русский beta"));
-        out.add(new LanguageOption("tr", "Türkçe beta"));
+        out.add(new LanguageOption("ru", "Русский"));
+        out.add(new LanguageOption("uk", "Українська"));
         return out;
     }
 

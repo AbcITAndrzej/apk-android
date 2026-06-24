@@ -1,19 +1,184 @@
 <resources>
     <string name="app_name">AdGuard TV DNS Pro</string>
-    <string name="home">Home</string>
-    <string name="apps">Apps</string>
-    <string name="servers">Servers</string>
-    <string name="logs">Logs</string>
-    <string name="connect">CONNECT</string>
-    <string name="stop">STOP</string>
-    <string name="on">ON</string>
-    <string name="off">OFF</string>
-    <string name="all_apps">All apps</string>
-    <string name="selected_apps">Selected apps</string>
-    <string name="search_apps">Search apps…</string>
-    <string name="active">ACTIVE</string>
-    <string name="inactive">INACTIVE</string>
-    <string name="clear_cache">Clear app cache / logs</string>
-    <string name="cache_cleared">App cache and logs cleared</string>
-    <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
+    <string name="home">Главная</string>
+    <string name="apps">Приложения</string>
+    <string name="servers">Серверы</string>
+    <string name="logs">Журналы</string>
+    <string name="settings">Настройки</string>
+    <string name="connect">ПОДКЛЮЧИТЬ</string>
+    <string name="stop">СТОП</string>
+    <string name="on">ВКЛ</string>
+    <string name="off">ВЫКЛ</string>
+    <string name="current_server">Текущий сервер</string>
+    <string name="current_mode">Текущий режим</string>
+    <string name="all_apps">Все приложения</string>
+    <string name="selected_apps">Выбранные приложения</string>
+    <string name="selected_apps_count">Выбранные приложения: %1$d</string>
+    <string name="dns_on_for_all">DNS включён для всех приложений</string>
+    <string name="choose_apps_hint">Выберите, какие приложения должны использовать выбранный DNS-сервер. Расширенное журналирование можно включить для каждого приложения, но точная привязка DNS к приложению работает точно только при выборе одного приложения.</string>
+    <string name="search_apps">Поиск приложений…</string>
+    <string name="show_keyboard">Клавиатура</string>
+    <string name="select_all">Выбрать все</string>
+    <string name="clear_all">Очистить всё</string>
+    <string name="select_visible">Выбрать видимые</string>
+    <string name="clear_visible">Очистить видимые</string>
+    <string name="dns_enabled">DNS ВКЛ</string>
+    <string name="dns_disabled">DNS ВЫКЛ</string>
+    <string name="log_enabled">ЛОГ ВКЛ</string>
+    <string name="log_disabled">ЛОГ ВЫКЛ</string>
+    <string name="advanced_logging">Расширенное журналирование</string>
+    <string name="server_presets">Предустановки DNS-серверов</string>
+    <string name="custom_server">Пользовательский DNS-сервер</string>
+    <string name="save_custom">Сохранить свой</string>
+    <string name="dns_1">DNS 1</string>
+    <string name="dns_2">DNS 2</string>
+    <string name="active">АКТИВНО</string>
+    <string name="inactive">НЕАКТИВНО</string>
+    <string name="vpn_permission_needed">Android требует разрешение VPN</string>
+    <string name="vpn_permission_denied">Без разрешения VPN изменить DNS нельзя</string>
+    <string name="connecting">Подключение…</string>
+    <string name="stopping">Остановка…</string>
+    <string name="log_empty">Журналов пока нет.</string>
+    <string name="copy_logs">Копировать журналы</string>
+    <string name="clear_logs">Очистить журналы</string>
+    <string name="refresh">Обновить</string>
+    <string name="stats">Статистика</string>
+    <string name="queries">Запросы</string>
+    <string name="responses">Ответы</string>
+    <string name="failures">Сбои</string>
+    <string name="last_domain">Последний домен</string>
+    <string name="last_error">Последняя ошибка</string>
+    <string name="battery_saver">Отладка экономии батареи</string>
+    <string name="battery_saver_hint">Уменьшает журналирование и количество рабочих потоков. Полезно, если телефон нагревается.</string>
+    <string name="focus_hint">Используйте D-pad. Выбранный элемент имеет ярко-синюю рамку.</string>
+    <string name="no_apps_found">Запускаемые приложения не найдены.</string>
+    <string name="installed_apps">Установленные приложения</string>
+    <string name="intro_title">Введение</string>
+    <string name="select_mode">Режим</string>
+    <string name="global_log_group">Все / неизвестное приложение</string>
+    <string name="multi_app_log_group">Группа выбранных приложений</string>
+    <string name="invalid_dns">Введите допустимые DNS-адреса IPv4 или IPv6.</string>
+    <string name="no_selected_apps">Выберите приложения или переключитесь в режим всех приложений.</string>
+    <string name="copied">Скопировано</string>
+    <string name="cleared">Очищено</string>
+    <string name="server_saved">Сервер сохранён</string>
+    <string name="server_selected">Сервер выбран</string>
+    <string name="build_flavor">v3.5.5 полные переводы</string>
+    <string name="clear_cache">Очистить кэш / журналы приложения</string>
+    <string name="cache_cleared">Кэш и журналы приложения очищены</string>
+    <string name="power_button_hint">Кнопка питания: подключить или остановить DNS VPN</string>
+    <string name="filter_all_apps">Все</string>
+    <string name="filter_dns_apps">Приложения с DNS</string>
+    <string name="filter_no_dns_apps">Приложения без DNS</string>
+    <string name="profiles">Профили</string>
+    <string name="profiles_hint">Сохраните текущий DNS и выбор приложений. Нажмите профиль, чтобы применить его и подключиться.</string>
+    <string name="quick_app_profiles">Быстрые профили приложений</string>
+    <string name="save_current_profile">Сохранить текущее как профиль</string>
+    <string name="clear_profiles">Очистить профили</string>
+    <string name="profile_name_hint">Название профиля</string>
+    <string name="profile_saved">Профиль сохранён</string>
+    <string name="quick_selected_shortcuts">Ярлыки профилей</string>
+    <string name="quick_profiles_hint">Ярлыки выбранных приложений находятся на главной странице.</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+    <string name="export_settings">Экспорт настроек</string>
+    <string name="import_settings">Импорт настроек</string>
+    <string name="settings_exported">Настройки экспортированы</string>
+    <string name="settings_imported">Настройки импортированы</string>
+    <string name="settings_copied">Настройки скопированы в буфер обмена</string>
+    <string name="export_failed">Ошибка экспорта</string>
+    <string name="import_failed">Ошибка импорта</string>
+    <string name="import_not_available">Выбор импорта недоступен</string>
+    <string name="settings_title">Настройки программы</string>
+    <string name="settings_hint">Сохраните или загрузите полную конфигурацию программы, очистите локальный кэш и выберите язык приложения.</string>
+    <string name="save_all_settings">Сохранить все настройки</string>
+    <string name="load_all_settings">Загрузить настройки</string>
+    <string name="cloud_beta">Облачное сохранение (бета)</string>
+    <string name="cloud_beta_hint">Облачная синхронизация запланирована для будущей версии. Локальный экспорт/импорт уже работает.</string>
+    <string name="cloud_beta_not_ready">Облачное сохранение ещё не готово.</string>
+    <string name="language">Язык</string>
+    <string name="language_hint">Выберите язык приложения. Эта версия содержит полные переводы для всех видимых языков.</string>
+    <string name="language_system">Язык системы</string>
+    <string name="language_changed">Язык изменён</string>
+    <string name="theme">Тема</string>
+    <string name="theme_hint">Выберите тёмную, светлую или системную тему. Настройки профилей не изменятся.</string>
+    <string name="theme_system">Система</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="startup">Автозапуск</string>
+    <string name="startup_hint">Необязательно. После запуска Android TV приложение может переподключить DNS VPN с текущими настройками или выбранным профилем.</string>
+    <string name="autostart_on">Автозапуск ВКЛ</string>
+    <string name="autostart_off">Автозапуск ВЫКЛ</string>
+    <string name="autostart_current">Использовать текущие настройки</string>
+    <string name="autostart_profile_hint">Профиль автозапуска</string>
+    <string name="network_tools">Сетевые инструменты</string>
+    <string name="network_tools_hint">Дополнительные параметры надёжности и быстрая диагностика.</string>
+    <string name="ipv6_dns_on">IPv6 DNS ВКЛ</string>
+    <string name="ipv6_dns_off">IPv6 DNS ВЫКЛ</string>
+    <string name="tcp_fallback_on">Резерв TCP ВКЛ</string>
+    <string name="tcp_fallback_off">Резерв TCP ВЫКЛ</string>
+    <string name="test_dns">Проверить DNS</string>
+    <string name="testing_dns">Проверка DNS…</string>
+    <string name="dns_test_ok">Тест DNS OK</string>
+    <string name="dns_test_failed">Тест DNS не выполнен</string>
+    <string name="server">Сервер</string>
+    <string name="open_vpn_settings">Настройки VPN</string>
+    <string name="open_settings_failed">Не удалось открыть настройки</string>
+    <string name="about_app">О приложении</string>
+    <string name="version_label">Версия</string>
+    <string name="check_update">Проверить обновление</string>
+    <string name="checking_update">Проверка обновления…</string>
+    <string name="no_update_available">Новая версия недоступна.</string>
+    <string name="update_check_failed">Проверка обновления не удалась. Возможно, GitHub Release ещё не существует.</string>
+    <string name="update_available">Доступно обновление</string>
+    <string name="update_available_message">Текущая: %1$s
+Последняя: %2$s
+Скачать и открыть установщик Android?</string>
+    <string name="download_update">Скачать обновление</string>
+    <string name="downloading_update">Загрузка обновления…</string>
+    <string name="update_download_failed">Не удалось скачать обновление.</string>
+    <string name="update_downloaded_open_failed">Скачано, но не удалось открыть установщик Android.</string>
+    <string name="install_permission_needed">Требуется разрешение на установку</string>
+    <string name="install_permission_message">Разрешите этому приложению устанавливать APK-обновления, затем проверьте обновление снова.</string>
+    <string name="open_settings">Открыть настройки</string>
+    <string name="export_diagnostic_logs">Экспорт диагностических журналов</string>
+    <string name="logs_exported">Диагностические журналы экспортированы</string>
+    <string name="always_on_hint">Always-on VPN настраивается в системных настройках VPN Android. Кнопка выше открывает нужное место, если прошивка TV это разрешает.</string>
+    <string name="test_update_source">Проверить GitHub Releases</string>
+    <string name="testing_update_source">Проверка источника обновлений…</string>
+    <string name="update_source_ok">GitHub Releases OK</string>
+    <string name="update_source_ok_message">Репозиторий: %1$s
+Текущая: %2$s
+Последняя: %3$s
+Последний versionCode: %4$s
+APK: %5$s
+URL: %6$s</string>
+    <string name="open_releases_page">Открыть Releases</string>
+    <string name="update_check_failed_title">Проверка обновления не удалась</string>
+    <string name="update_check_failed_details">Репозиторий: %1$s
+
+Причина: %2$s
+
+Проверка:
+1. Репозиторий должен быть публичным или доступным.
+2. Создайте тег, например v3.5.5.
+3. Подождите, пока Actions опубликует GitHub Release.
+4. Release должен содержать APK-файл.</string>
+    <string name="no_update_details">Текущая: %1$s
+Последняя: %2$s
+Последний versionCode: %3$s
+APK: %4$s
+
+Обновление работает. Просто нет версии новее установленной.</string>
+    <string name="light_theme_fixed">Читаемость светлой темы улучшена</string>
+    <string name="download_update_test">Скачать последний APK (тест)</string>
+    <string name="startup_update_title">Проверка версии приложения</string>
+    <string name="startup_update_checking_message">Проверка, является ли это последней версией…</string>
+    <string name="startup_update_snooze_14_days">Не напоминать 14 дней</string>
+    <string name="startup_update_disable">Не проверять обновления при запуске</string>
+    <string name="startup_update_latest_message">У вас уже последняя версия: %1$s</string>
+    <string name="startup_update_failed_message">Не удалось проверить обновления сейчас. Причина: %1$s</string>
+    <string name="startup_update_on">Проверка при запуске ВКЛ</string>
+    <string name="startup_update_off">Проверка при запуске ВЫКЛ</string>
+    <string name="loading_apps">Загрузка списка приложений…</string>
 </resources>
