@@ -16,8 +16,8 @@ android {
         applicationId 'pl.abcit.adguardtvdns'
         minSdk 23
         targetSdk 29
-        versionCode 36
-        versionName '3.5.1-updater-test'
+        versionCode 37
+        versionName '3.5.2-updater-ui-fix'
     }
 
     signingConfigs {

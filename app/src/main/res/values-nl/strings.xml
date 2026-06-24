@@ -43,7 +43,7 @@
     <string name="clear_cache">Cache / logs wissen</string>
     <string name="cache_cleared">Cache en logs gewist</string>
     <string name="power_button_hint">Aan/uit-knop: DNS-VPN verbinden of stoppen</string>
-    <string name="build_flavor">v3.5 updater-test</string>
+    <string name="build_flavor">v3.5.2 updater UI fix</string>
     <string name="test_update_source">GitHub Releases testen</string>
     <string name="testing_update_source">Updatebron testen…</string>
     <string name="update_source_ok">GitHub Releases werkt</string>

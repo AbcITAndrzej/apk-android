@@ -63,7 +63,7 @@
     <string name="cleared">Wyczyszczono</string>
     <string name="server_saved">Serwer zapisany</string>
     <string name="server_selected">Serwer wybrany</string>
-    <string name="build_flavor">v3.5 test aktualizacji</string>
+    <string name="build_flavor">v3.5.2 updater UI fix</string>
     <string name="clear_cache">Wyczyść cache / logi</string>
     <string name="cache_cleared">Cache i logi wyczyszczone</string>
     <string name="power_button_hint">Przycisk zasilania: połącz albo zatrzymaj DNS VPN</string>
@@ -164,7 +164,7 @@ Powód: %2$s
 
 Lista kontroli:
 1. Repo musi być publiczne albo dostępne.
-2. Utwórz tag, np. v3.5.
+2. Utwórz tag, np. v3.5.2.
 3. Poczekaj aż Actions opublikuje GitHub Release.
 4. Release musi zawierać plik APK.</string>
     <string name="no_update_details">Obecna wersja: %1$s
@@ -174,4 +174,5 @@ APK: %4$s
 
 Updater działa. Po prostu nie ma nowszej wersji niż zainstalowana.</string>
     <string name="light_theme_fixed">Poprawiono czytelność jasnego motywu</string>
+    <string name="download_update_test">Pobierz najnowsze APK testowo</string>
 </resources>

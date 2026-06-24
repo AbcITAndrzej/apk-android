@@ -72,7 +72,8 @@ final class AppUpdateManager {
                 activity.runOnUiThread(() -> new AlertDialog.Builder(activity)
                         .setTitle(activity.getString(R.string.update_source_ok))
                         .setMessage(msg)
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton(activity.getString(R.string.download_update_test), (d, w) -> downloadAndInstall(activity, info))
+                        .setNegativeButton("OK", null)
                         .setNeutralButton(activity.getString(R.string.open_releases_page), (d, w) -> openReleasesPage(activity))
                         .show());
             } catch (Exception e) {
@@ -121,10 +122,12 @@ final class AppUpdateManager {
         conn.setReadTimeout(10000);
         conn.setRequestProperty("Accept", "application/vnd.github+json");
         conn.setRequestProperty("User-Agent", "AdGuard-TV-DNS-Pro-Updater");
+        conn.setRequestProperty("Cache-Control", "no-cache");
+        conn.setRequestProperty("Pragma", "no-cache");
         int code = conn.getResponseCode();
         InputStream stream = code >= 200 && code < 300 ? conn.getInputStream() : conn.getErrorStream();
         String body = readAll(stream);
-        if (code == 404) throw new Exception("HTTP 404: no public GitHub Release found. Create a tag like v3.5 and wait for Actions to publish the release.");
+        if (code == 404) throw new Exception("HTTP 404: no public GitHub Release found. Create a tag like v3.5.2 and wait for Actions to publish the release.");
         if (code < 200 || code >= 300) throw new Exception("HTTP " + code + ": " + trim(body, 260));
 
         JSONObject json = new JSONObject(body);
@@ -134,6 +137,8 @@ final class AppUpdateManager {
         info.body = json.optString("body", "");
         info.versionCode = parseVersionCode(info.body);
         if (info.versionCode <= 0) info.versionCode = parseVersionCode(info.tagName + "\n" + info.name);
+        info.versionName = parseVersionName(info.body);
+        if (info.versionName == null || info.versionName.length() == 0) info.versionName = parseVersionName(info.tagName + "\n" + info.name);
 
         JSONArray assets = json.optJSONArray("assets");
         if (assets != null) {
@@ -163,6 +168,15 @@ final class AppUpdateManager {
             try { return Integer.parseInt(m.group(1)); } catch (Exception ignored) {}
         }
         return -1;
+    }
+
+    private static String parseVersionName(String text) {
+        if (text == null) return "";
+        Matcher m = Pattern.compile("versionName\\s*[:=]\\s*['\"]?([^\\s'\"]+)", Pattern.CASE_INSENSITIVE).matcher(text);
+        if (m.find()) return m.group(1).trim();
+        Matcher tag = Pattern.compile("v?(\\d+(?:\\.\\d+){1,3}(?:[-_][A-Za-z0-9._-]+)?)", Pattern.CASE_INSENSITIVE).matcher(text);
+        if (tag.find()) return tag.group(1).trim();
+        return "";
     }
 
     private static void downloadAndInstall(Activity activity, ReleaseInfo info) {
@@ -237,8 +251,43 @@ final class AppUpdateManager {
     }
 
     private static boolean isNewer(VersionInfo current, ReleaseInfo latest) {
+        // Najpewniejsze jest porównanie versionCode. VersionName może mieć dopiski typu "test"/"debug".
         if (latest.versionCode > 0 && current.code > 0) return latest.versionCode > current.code;
+
+        int[] currentNumbers = extractVersionNumbers(current.name);
+        int[] latestNumbers = extractVersionNumbers(firstNonEmpty(latest.versionName, latest.tagName, latest.name));
+        if (currentNumbers != null && latestNumbers != null) return compareVersions(latestNumbers, currentNumbers) > 0;
+
         return isDifferentVersion(current.name, latest.tagName, latest.name);
+    }
+
+    private static String firstNonEmpty(String a, String b, String c) {
+        if (a != null && a.trim().length() > 0) return a;
+        if (b != null && b.trim().length() > 0) return b;
+        if (c != null && c.trim().length() > 0) return c;
+        return "";
+    }
+
+    private static int[] extractVersionNumbers(String value) {
+        if (value == null) return null;
+        Matcher m = Pattern.compile("(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?(?:\\.(\\d+))?").matcher(value);
+        if (!m.find()) return null;
+        int[] out = new int[]{0, 0, 0, 0};
+        for (int i = 1; i <= 4; i++) {
+            String part = m.group(i);
+            if (part == null || part.length() == 0) continue;
+            try { out[i - 1] = Integer.parseInt(part); } catch (Exception ignored) {}
+        }
+        return out;
+    }
+
+    private static int compareVersions(int[] a, int[] b) {
+        for (int i = 0; i < 4; i++) {
+            int av = i < a.length ? a[i] : 0;
+            int bv = i < b.length ? b[i] : 0;
+            if (av != bv) return av > bv ? 1 : -1;
+        }
+        return 0;
     }
 
     private static boolean isDifferentVersion(String current, String tag, String name) {
@@ -299,10 +348,15 @@ final class AppUpdateManager {
         String tagName;
         String name;
         String body;
+        String versionName;
         String apkName;
         String downloadUrl;
         int versionCode = -1;
         String displayName() {
+            if (versionName != null && !versionName.isEmpty()) {
+                if (tagName != null && !tagName.isEmpty() && !versionName.equals(tagName)) return versionName + " (" + tagName + ")";
+                return versionName;
+            }
             if (tagName != null && !tagName.isEmpty()) return tagName;
             if (name != null && !name.isEmpty()) return name;
             return "latest";

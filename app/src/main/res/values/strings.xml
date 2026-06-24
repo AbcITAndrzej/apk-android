@@ -63,7 +63,7 @@
     <string name="cleared">Cleared</string>
     <string name="server_saved">Server saved</string>
     <string name="server_selected">Server selected</string>
-    <string name="build_flavor">v3.5 updater test</string>
+    <string name="build_flavor">v3.5.2 updater UI fix</string>
     <string name="clear_cache">Clear app cache / logs</string>
     <string name="cache_cleared">App cache and logs cleared</string>
     <string name="power_button_hint">Power button: connect or stop DNS VPN</string>
@@ -164,7 +164,7 @@ Reason: %2$s
 
 Checklist:
 1. Repo must be public or reachable.
-2. Create a tag, for example v3.5.
+2. Create a tag, for example v3.5.2.
 3. Wait until Actions publishes GitHub Release.
 4. Release must contain an APK asset.</string>
     <string name="no_update_details">Current: %1$s
@@ -174,4 +174,5 @@ APK: %4$s
 
 The updater works. There is simply no newer version than the one installed.</string>
     <string name="light_theme_fixed">Light theme readability improved</string>
+    <string name="download_update_test">Download latest APK (test)</string>
 </resources>

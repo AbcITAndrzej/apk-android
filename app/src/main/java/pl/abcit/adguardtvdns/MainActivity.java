@@ -142,7 +142,7 @@ public class MainActivity extends Activity {
         loadApps();
         setContentView(buildRoot());
         showScreen(SCREEN_HOME);
-        DebugLog.log(this, "SYSTEM", "UI opened: v3.5 updater test");
+        DebugLog.log(this, "SYSTEM", "UI opened: v3.5.2 updater UI fix");
     }
 
     @Override protected void onResume() {
@@ -167,12 +167,12 @@ public class MainActivity extends Activity {
         top.setGravity(Gravity.CENTER_VERTICAL);
         top.setPadding(dp(22), dp(14), dp(22), dp(12));
         top.setBackground(makeSolid(topBarColor(), 0, topBarColor(), 0));
-        root.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(76)));
+        root.addView(top, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(70)));
 
         topLeftButton = miniButton("⚙");
         topLeftButton.setTextSize(28);
         topLeftButton.setOnClickListener(v -> { if (currentScreen == SCREEN_HOME) showScreen(SCREEN_SETTINGS); else showScreen(SCREEN_HOME); });
-        top.addView(topLeftButton, new LinearLayout.LayoutParams(dp(64), dp(54)));
+        top.addView(topLeftButton, new LinearLayout.LayoutParams(dp(58), dp(50)));
 
         titleView = text(getString(R.string.app_name), 24, true, 0xFFFFFFFF);
         titleView.setPadding(dp(14), 0, 0, 0);
@@ -181,7 +181,7 @@ public class MainActivity extends Activity {
         statusBadge = text("...", 14, true, 0xFFFFFFFF);
         statusBadge.setGravity(Gravity.CENTER);
         statusBadge.setPadding(dp(12), dp(8), dp(12), dp(8));
-        top.addView(statusBadge, new LinearLayout.LayoutParams(dp(145), dp(46)));
+        top.addView(statusBadge, new LinearLayout.LayoutParams(dp(132), dp(42)));
 
         contentFrame = new FrameLayout(this);
         root.addView(contentFrame, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
@@ -189,9 +189,9 @@ public class MainActivity extends Activity {
         LinearLayout bottom = new LinearLayout(this);
         bottom.setOrientation(LinearLayout.HORIZONTAL);
         bottom.setGravity(Gravity.CENTER);
-        bottom.setPadding(dp(12), dp(10), dp(12), dp(10));
+        bottom.setPadding(dp(12), dp(8), dp(12), dp(8));
         bottom.setBackground(makeSolid(bottomBarColor(), 0, borderColor(), 1));
-        root.addView(bottom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(92)));
+        root.addView(bottom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(84)));
 
         tabHome = navButton("⌂\n" + getString(R.string.home));
         tabApps = navButton("▦\n" + getString(R.string.apps));
@@ -201,13 +201,13 @@ public class MainActivity extends Activity {
         tabApps.setOnClickListener(v -> showScreen(SCREEN_APPS));
         tabServers.setOnClickListener(v -> showScreen(SCREEN_SERVERS));
         tabLogs.setOnClickListener(v -> showScreen(SCREEN_LOGS));
-        bottom.addView(tabHome, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(tabHome, new LinearLayout.LayoutParams(0, dp(64), 1));
         bottom.addView(gap(8, 1));
-        bottom.addView(tabApps, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(tabApps, new LinearLayout.LayoutParams(0, dp(64), 1));
         bottom.addView(gap(8, 1));
-        bottom.addView(tabServers, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(tabServers, new LinearLayout.LayoutParams(0, dp(64), 1));
         bottom.addView(gap(8, 1));
-        bottom.addView(tabLogs, new LinearLayout.LayoutParams(0, dp(72), 1));
+        bottom.addView(tabLogs, new LinearLayout.LayoutParams(0, dp(64), 1));
 
         return root;
     }
@@ -233,6 +233,7 @@ public class MainActivity extends Activity {
             contentFrame.addView(scroll(buildSettingsScreen()));
         }
         refreshStatusViews();
+        if (screen == SCREEN_HOME) requestHomeDefaultFocus();
     }
 
     private View buildHomeScreen() {
@@ -242,17 +243,18 @@ public class MainActivity extends Activity {
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
         root.addView(hero, matchWrap());
 
-        starPowerButton = baseButton("✦", 0xFF263548, 0xFF3C95F4, 0xFFD9DEE7, 58);
+        starPowerButton = baseButton("✦", 0xFF263548, 0xFF3C95F4, 0xFFD9DEE7, 54);
         starPowerButton.setContentDescription(getString(R.string.power_button_hint));
+        starPowerButton.setOnFocusChangeListener((v, hasFocus) -> refreshStatusViews());
         starPowerButton.setOnClickListener(v -> toggleDnsVpn());
-        hero.addView(starPowerButton, new LinearLayout.LayoutParams(dp(154), dp(154)));
+        hero.addView(starPowerButton, new LinearLayout.LayoutParams(dp(138), dp(138)));
 
         hero.addView(space(1, 18));
         TextView serverLabel = text(getString(R.string.current_server) + ":", 16, false, 0xFFB8C4D8);
         serverLabel.setGravity(Gravity.CENTER);
         hero.addView(serverLabel, matchWrap());
 
-        TextView serverName = text(getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS") + "  →", 30, true, 0xFFFFFFFF);
+        TextView serverName = text(getPrefs().getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS") + "  →", 26, true, 0xFFFFFFFF);
         serverName.setGravity(Gravity.CENTER);
         serverName.setPadding(0, dp(4), 0, dp(10));
         serverName.setFocusable(true);
@@ -267,36 +269,36 @@ public class MainActivity extends Activity {
 
         Button appsButton = bigIconButton("▦\n" + getString(R.string.apps));
         appsButton.setOnClickListener(v -> showScreen(SCREEN_APPS));
-        shortcuts.addView(appsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(appsButton, new LinearLayout.LayoutParams(0, dp(96), 1));
         shortcuts.addView(gap(14, 1));
 
         Button serversButton = bigIconButton("▤\n" + getString(R.string.servers));
         serversButton.setOnClickListener(v -> showScreen(SCREEN_SERVERS));
-        shortcuts.addView(serversButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(serversButton, new LinearLayout.LayoutParams(0, dp(96), 1));
         shortcuts.addView(gap(14, 1));
 
         Button logsButton = bigIconButton("◎\n" + getString(R.string.logs));
         logsButton.setOnClickListener(v -> showScreen(SCREEN_LOGS));
-        shortcuts.addView(logsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(logsButton, new LinearLayout.LayoutParams(0, dp(96), 1));
         shortcuts.addView(gap(14, 1));
 
         Button settingsButton = bigIconButton("⚙\n" + getString(R.string.settings));
         settingsButton.setOnClickListener(v -> showScreen(SCREEN_SETTINGS));
-        shortcuts.addView(settingsButton, new LinearLayout.LayoutParams(0, dp(110), 1));
+        shortcuts.addView(settingsButton, new LinearLayout.LayoutParams(0, dp(96), 1));
 
         hero.addView(space(1, 24));
         LinearLayout connectRow = new LinearLayout(this);
         connectRow.setOrientation(LinearLayout.HORIZONTAL);
         connectRow.setGravity(Gravity.CENTER);
-        hero.addView(connectRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(74)));
+        hero.addView(connectRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(66)));
 
         Button off = segmentedButton(getString(R.string.off), false);
         off.setOnClickListener(v -> stopDnsVpn());
-        connectRow.addView(off, new LinearLayout.LayoutParams(0, dp(62), 1));
+        connectRow.addView(off, new LinearLayout.LayoutParams(0, dp(54), 1));
         connectRow.addView(gap(10, 1));
         Button on = segmentedButton(getString(R.string.on), true);
         on.setOnClickListener(v -> startDnsVpn());
-        connectRow.addView(on, new LinearLayout.LayoutParams(0, dp(62), 1));
+        connectRow.addView(on, new LinearLayout.LayoutParams(0, dp(54), 1));
 
         root.addView(space(1, 16));
         root.addView(buildProfilesCard(), matchWrap());
@@ -1126,7 +1128,7 @@ public class MainActivity extends Activity {
             SharedPreferences p = getPrefs();
             JSONObject o = new JSONObject();
             o.put("format", "adguard-tv-dns-pro");
-            o.put("version", 34);
+            o.put("version", 37);
             o.put("serverName", p.getString(DnsVpnService.PREF_SERVER_NAME, "AdGuard DNS"));
             o.put("dns1", p.getString(DnsVpnService.PREF_DNS_1, "94.140.14.14"));
             o.put("dns2", p.getString(DnsVpnService.PREF_DNS_2, "94.140.15.15"));
@@ -1187,9 +1189,12 @@ public class MainActivity extends Activity {
             statusBadge.setBackground(makeSolid(running ? 0xFF1D8B5A : 0xFF7D3240, 22, running ? 0xFF8BFFD0 : 0xFFFF9DA8, 2));
         }
         if (starPowerButton != null) {
+            boolean focused = starPowerButton.hasFocus();
             starPowerButton.setText(running ? "★" : "✦");
             starPowerButton.setTextColor(running ? 0xFFFFD66B : 0xFFD9DEE7);
-            starPowerButton.setBackground(makeSolid(running ? 0xFF3A3014 : 0xFF263548, 160, running ? 0xFFFFD66B : 0xFF6EADEB, running ? 4 : 2));
+            int bg = focused ? (running ? 0xFF4A3A18 : 0xFF2E7DD1) : (running ? 0xFF3A3014 : 0xFF263548);
+            int border = focused ? 0xFFBDE3FF : (running ? 0xFFFFD66B : 0xFF6EADEB);
+            starPowerButton.setBackground(makeSolid(bg, 160, border, focused ? 5 : (running ? 4 : 2)));
         }
         String stats = buildStatsText();
         if (homeStatsText != null) homeStatsText.setText(stats);
@@ -1370,6 +1375,15 @@ public class MainActivity extends Activity {
         updateTopLeftButton();
     }
 
+    private void requestHomeDefaultFocus() {
+        handler.postDelayed(() -> {
+            if (currentScreen == SCREEN_HOME && starPowerButton != null) {
+                starPowerButton.requestFocus();
+                refreshStatusViews();
+            }
+        }, 180);
+    }
+
     private void updateTopLeftButton() {
         if (topLeftButton == null) return;
         if (currentScreen == SCREEN_HOME) {
@@ -1530,7 +1544,7 @@ public class MainActivity extends Activity {
     private View buildAboutCard() {
         LinearLayout card = card(0xFF172435, 0xFF34445C);
         card.addView(text(getString(R.string.about_app), 22, true, 0xFFFFFFFF));
-        TextView version = text(getString(R.string.version_label) + ": " + getVersionNameSafe(), 15, false, 0xFFD5DEEC);
+        TextView version = text(getString(R.string.version_label) + ": " + getVersionNameSafe() + " (" + getVersionCodeSafe() + ")", 15, false, 0xFFD5DEEC);
         version.setPadding(0, dp(4), 0, dp(12));
         card.addView(version);
         LinearLayout row = new LinearLayout(this);
@@ -1616,6 +1630,16 @@ public class MainActivity extends Activity {
         try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return getString(R.string.build_flavor); }
     }
 
+    private int getVersionCodeSafe() {
+        try {
+            android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= 28) return (int) pi.getLongVersionCode();
+            return pi.versionCode;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
     private boolean isLightTheme() {
         String theme = getPrefs().getString(PREF_THEME, THEME_SYSTEM);
         if (THEME_LIGHT.equals(theme)) return true;
@@ -1689,7 +1713,7 @@ public class MainActivity extends Activity {
     private TextView text(String value, int sp, boolean bold, int color) {
         TextView t = new TextView(this);
         t.setText(value == null ? "" : value);
-        t.setTextSize(sp);
+        t.setTextSize(uiSp(sp));
         t.setTextColor(adaptTextColor(color));
         if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         t.setIncludeFontPadding(true);
@@ -1706,7 +1730,7 @@ public class MainActivity extends Activity {
         EditText e = new EditText(this);
         e.setTextColor(isLightTheme() ? 0xFF102033 : Color.WHITE);
         e.setHintTextColor(isLightTheme() ? 0xFF65758A : 0xFF7D8EA8);
-        e.setTextSize(16);
+        e.setTextSize(uiSp(15));
         e.setSingleLine(true);
         e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         e.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -1750,7 +1774,7 @@ public class MainActivity extends Activity {
         Button b = new Button(this);
         b.setText(value);
         b.setTextColor(textColor);
-        b.setTextSize(sp);
+        b.setTextSize(uiSp(sp));
         b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         b.setAllCaps(false);
         b.setGravity(Gravity.CENTER);
@@ -1762,7 +1786,12 @@ public class MainActivity extends Activity {
 
     private void styleNav(Button b, boolean selected) {
         if (b == null) return;
-        b.setBackground(makeSolid(selected ? 0xFF2E7DD1 : 0xFF1D2A3A, 18, selected ? 0xFF8DCAFF : 0xFF2B3A4F, selected ? 2 : 1));
+        int normal = selected ? 0xFF2E7DD1 : 0xFF1D2A3A;
+        int focus = selected ? 0xFF49A4FF : 0xFF36567E;
+        applyFocus(b, normal, focus, 18);
+        if (b.hasFocus()) {
+            b.setBackground(makeSolid(focus, 18, 0xFFBDE3FF, 4));
+        }
     }
 
     private void applyFocus(View view, int normal, int focus, int radius) {
@@ -1792,6 +1821,14 @@ public class MainActivity extends Activity {
     private LinearLayout.LayoutParams matchWrap() { return new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); }
     private Space gap(int w, int h) { Space s = new Space(this); s.setLayoutParams(new LinearLayout.LayoutParams(dp(w), dp(h))); return s; }
     private Space space(int w, int h) { return gap(w, h); }
+
+    private int uiSp(int sp) {
+        int out = sp >= 18 ? sp - 1 : sp;
+        int sw = getResources().getConfiguration().screenWidthDp;
+        if (sw > 0 && sw < 600) out -= 1;
+        return Math.max(11, out);
+    }
+
     private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density + 0.5f); }
 
     private void showKeyboard(EditText editText) {

@@ -1,0 +1,31 @@
+AdGuard TV DNS Pro v3.5.2 - publikacja i test updatera
+
+1) Rozpakuj ZIP do glownego folderu repo i nadpisz pliki.
+
+2) W CMD:
+   cd /d c:\Users\DELL\Downloads\adguard-tv-dns-project\adguard-tv-dns
+   git add -A
+   git commit -m "Fix updater and TV focus v3.5.2"
+   git push
+
+3) Sprawdz build main:
+   gh run list -R AbcITAndrzej/apk-android --limit 5
+
+4) Jezeli main jest zielony, utworz release tag:
+   git tag v3.5.2
+   git push origin v3.5.2
+
+5) Po zielonym buildzie wejdz w Releases. Powinien byc release v3.5.2 z APK.
+
+6) Test realnej aktualizacji:
+   - na TV/telefonie zostaw zainstalowana starsza wersje, np. versionCode 36,
+   - opublikuj v3.5.2 z versionCode 37,
+   - w aplikacji kliknij Ustawienia > O aplikacji > Sprawdz aktualizacje.
+
+7) Test samego pobierania, gdy masz juz najnowsza wersje:
+   Ustawienia > O aplikacji > Test GitHub Releases > Pobierz najnowsze APK testowo.
+
+Wazne:
+- Aktualizacja przejdzie tylko wtedy, gdy stara i nowa APK sa podpisane tym samym release.keystore.
+- Jezeli stara byla debug APK, a nowa jest release APK, Android moze wymagac odinstalowania starej aplikacji.
+- Nie zgub release.keystore ani hasel z GitHub Secrets.

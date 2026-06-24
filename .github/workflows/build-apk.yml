@@ -44,7 +44,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: adguard-tv-dns-pro-v3-5-debug-apk
+          name: adguard-tv-dns-pro-v3-5-2-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Decode release keystore
@@ -66,7 +66,7 @@ jobs:
         if: ${{ env.HAS_RELEASE_SIGNING == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: adguard-tv-dns-pro-v3-5-release-signed-apk
+          name: adguard-tv-dns-pro-v3-5-2-release-signed-apk
           path: app/build/outputs/apk/release/*.apk
 
       - name: Publish GitHub Release on tag
@@ -75,13 +75,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
-          cp "$APK" "AdGuard-TV-DNS-Pro-${GITHUB_REF_NAME}.apk"
-          cat > release-notes.txt <<'NOTES'
-          versionCode:35
-          versionName:3.5-updater-test
+          VERSION_CODE=$(grep -m1 "versionCode" app/build.gradle | awk '{print $2}')
+          VERSION_NAME=$(sed -n "s/.*versionName ['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)
+          SAFE_VERSION_NAME=$(echo "$VERSION_NAME" | tr -c 'A-Za-z0-9._-' '_')
+          OUT_APK="AdGuard-TV-DNS-Pro-${SAFE_VERSION_NAME}-${GITHUB_REF_NAME}.apk"
+          cp "$APK" "$OUT_APK"
+          cat > release-notes.txt <<NOTES
+          versionCode:${VERSION_CODE}
+          versionName:${VERSION_NAME}
           signed:true
           channel:release
+          tag:${GITHUB_REF_NAME}
           NOTES
-          gh release create "$GITHUB_REF_NAME" "AdGuard-TV-DNS-Pro-${GITHUB_REF_NAME}.apk" \
+          gh release create "$GITHUB_REF_NAME" "$OUT_APK" \
             --title "AdGuard TV DNS Pro ${GITHUB_REF_NAME}" \
             --notes-file release-notes.txt
